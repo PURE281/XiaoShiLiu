@@ -8,16 +8,16 @@
 
       <div class="auth-content">
         <div class="auth-header">
-          <h2 class="auth-title">{{ isLoginMode ? '登录小石榴' : '注册小石榴' }}</h2>
+          <h2 class="auth-title">{{ isLoginMode ? '登录聚包盆' : '注册聚包盆' }}</h2>
           <p class="auth-subtitle">{{ isLoginMode ? '欢迎回来！' : '加入我们，开始分享美好生活' }}</p>
         </div>
 
         <form @submit.prevent="handleSubmit" class="auth-form">
           <div class="form-group">
-            <label for="user_id" class="form-label">小石榴号</label>
+            <label for="user_id" class="form-label">聚包盆号</label>
             <input type="text" id="user_id" v-model="formData.user_id" class="form-input"
               :class="{ 'error': showErrors && errors.user_id }"
-              :placeholder="isLoginMode ? '请输入小石榴号' : '请输入小石榴号（3-15位字母数字下划线）'" maxlength="15"
+              :placeholder="isLoginMode ? '请输入聚包盆号' : '请输入聚包盆号（3-15位字母数字下划线）'" maxlength="15"
               @input="clearError('user_id')" />
             <span v-if="showErrors && errors.user_id" class="error-message">{{ errors.user_id }}</span>
           </div>
@@ -133,11 +133,11 @@ const isFormValid = computed(() => {
 
 const validateUserId = () => {
   if (!formData.user_id.trim()) {
-    errors.user_id = '请输入小石榴号'
+    errors.user_id = '请输入聚包盆号'
   } else if (!isLoginMode.value && formData.user_id.length < 3) {
-    errors.user_id = '小石榴号至少需要3位'
+    errors.user_id = '聚包盆号至少需要3位'
   } else if (!/^[a-zA-Z0-9_]+$/.test(formData.user_id)) {
-    errors.user_id = '小石榴号只能包含字母、数字和下划线'
+    errors.user_id = '聚包盆号只能包含字母、数字和下划线'
   } else {
     errors.user_id = ''
   }

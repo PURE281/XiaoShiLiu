@@ -11,7 +11,7 @@
             <div class="user-info">
                 <div class="user-main">
                     <h3 class="user-nickname" v-user-hover="userHoverConfig">{{ user.nickname }}</h3>
-                    <div class="user-id">小石榴号：{{ user.userId }}</div>
+                    <div class="user-id">聚包盆号：{{ user.userId }}</div>
                     <div class="user-stats">
                         <span class="stat-item">粉丝 · {{ formatNumber(user.followers) }}</span>
                         <span class="stat-item">笔记 · {{ formatNumber(user.notes) }}</span>
@@ -74,8 +74,8 @@ const isCurrentUser = computed(() => {
         return false
     }
 
-    const currentUserId = userStore.userInfo.user_id // 当前用户的小石榴号
-    const userId = props.user.user_id || props.user.userId // 用户的小石榴号
+    const currentUserId = userStore.userInfo.user_id // 当前用户的聚包盆号
+    const userId = props.user.user_id || props.user.userId // 用户的聚包盆号
 
     return currentUserId === userId
 })

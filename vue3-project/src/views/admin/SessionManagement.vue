@@ -9,7 +9,7 @@ import CrudTable from '@/views/admin/components/CrudTable.vue'
 const columns = [
   { key: 'id', label: 'ID', sortable: true },
   { key: 'user_id', label: '用户ID', sortable: false },
-  { key: 'user_display_id', label: '用户小石榴号', type: 'user-link', sortable: false },
+  { key: 'user_display_id', label: '用户聚包盆号', type: 'user-link', sortable: false },
   { key: 'user_agent', label: '用户代理', type: 'content', sortable: false },
   { key: 'is_active', label: '活跃状态', type: 'boolean', sortable: true },
   { key: 'expires_at', label: '过期时间', type: 'date', sortable: true },

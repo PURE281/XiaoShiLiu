@@ -200,7 +200,7 @@ async function loadLikesData(isLoadMore = false) {
     // 转换后端数据格式为前端期望的格式
     const transformedData = (response.data?.notifications || []).map(item => ({
       notificationId: item.id, // 通知ID，用于标记已读
-      id: item.from_user_id, // 使用from_user_id字段（小石榴号）用于导航
+      id: item.from_user_id, // 使用from_user_id字段（聚包盆号）用于导航
       autoId: item.from_user_auto_id, // 自增ID，用于API调用
       username: item.from_nickname || '未知用户',
       avatar: item.from_avatar || new URL('@/assets/imgs/avatar.png', import.meta.url).href,
@@ -292,7 +292,7 @@ async function loadFollowsData(isLoadMore = false) {
 
       return {
         notificationId: item.id, // 通知ID，用于标记已读
-        id: item.from_user_id, // 使用from_user_id字段（小石榴号）用于导航
+        id: item.from_user_id, // 使用from_user_id字段（聚包盆号）用于导航
         from_user_id: item.from_user_id, // 添加from_user_id字段供FollowButton使用
         autoId: item.from_user_auto_id, // 自增ID，用于API调用
         username: item.from_nickname || '未知用户',
@@ -349,7 +349,7 @@ async function loadCollectionsData(isLoadMore = false) {
     // 转换后端数据格式为前端期望的格式
     const transformedData = (response.data?.notifications || []).map(item => ({
       notificationId: item.id, // 通知ID，用于标记已读
-      id: item.from_user_id, // 使用from_user_id字段（小石榴号）用于导航
+      id: item.from_user_id, // 使用from_user_id字段（聚包盆号）用于导航
       autoId: item.from_user_auto_id, // 自增ID，用于API调用
       username: item.from_nickname || '未知用户',
       avatar: item.from_avatar || new URL('@/assets/imgs/avatar.png', import.meta.url).href,

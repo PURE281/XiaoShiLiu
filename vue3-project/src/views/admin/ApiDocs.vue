@@ -1,7 +1,7 @@
 <template>
   <div class="api-docs">
     <div class="docs-header">
-      <h2>小石榴图文社区 API 接口文档</h2>
+      <h2>聚包盆图文社区 API 接口文档</h2>
       <div class="docs-info">
         <span class="version">版本: v1.0.0</span>
         <span class="base-url">基础URL: http://localhost:3001/</span>
@@ -192,7 +192,7 @@ const apiGroups = ref([
         description: '用户注册接口，支持IP属地自动获取',
         expanded: false,
         params: [
-          { name: 'user_id', type: 'string', required: true, description: '小石榴号（3-15位，字母数字下划线）' },
+          { name: 'user_id', type: 'string', required: true, description: '聚包盆号（3-15位，字母数字下划线）' },
           { name: 'nickname', type: 'string', required: true, description: '昵称（2-10位）' },
           { name: 'password', type: 'string', required: true, description: '密码（6-20位）' },
           { name: 'avatar', type: 'string', required: false, description: '头像URL' },
@@ -226,7 +226,7 @@ const apiGroups = ref([
         description: '用户登录接口，返回JWT令牌',
         expanded: false,
         params: [
-          { name: 'user_id', type: 'string', required: true, description: '小石榴号' },
+          { name: 'user_id', type: 'string', required: true, description: '聚包盆号' },
           { name: 'password', type: 'string', required: true, description: '密码' }
         ],
         example: `{
@@ -292,7 +292,7 @@ const apiGroups = ref([
         method: 'GET',
         path: '/api/users/search',
         title: '搜索用户',
-        description: '根据关键词搜索用户（昵称或小石榴号）',
+        description: '根据关键词搜索用户（昵称或聚包盆号）',
         expanded: false,
         params: [
           { name: 'keyword', type: 'string', required: true, description: '搜索关键词' },
@@ -304,10 +304,10 @@ const apiGroups = ref([
         method: 'GET',
         path: '/api/users/:id',
         title: '获取用户详情',
-        description: '根据小石榴号获取用户详细信息',
+        description: '根据聚包盆号获取用户详细信息',
         expanded: false,
         params: [
-          { name: 'id', type: 'string', required: true, description: '小石榴号' }
+          { name: 'id', type: 'string', required: true, description: '聚包盆号' }
         ]
       },
       {
@@ -317,7 +317,7 @@ const apiGroups = ref([
         description: '获取指定用户发布的笔记列表',
         expanded: false,
         params: [
-          { name: 'id', type: 'string', required: true, description: '小石榴号' },
+          { name: 'id', type: 'string', required: true, description: '聚包盆号' },
           { name: 'page', type: 'int', required: false, description: '页码，默认1' },
           { name: 'limit', type: 'int', required: false, description: '每页数量，默认20' }
         ]
@@ -329,7 +329,7 @@ const apiGroups = ref([
         description: '获取指定用户收藏的笔记列表',
         expanded: false,
         params: [
-          { name: 'id', type: 'string', required: true, description: '小石榴号' },
+          { name: 'id', type: 'string', required: true, description: '聚包盆号' },
           { name: 'page', type: 'int', required: false, description: '页码，默认1' },
           { name: 'limit', type: 'int', required: false, description: '每页数量，默认20' }
         ]
@@ -341,7 +341,7 @@ const apiGroups = ref([
         description: '获取指定用户点赞的笔记列表',
         expanded: false,
         params: [
-          { name: 'id', type: 'string', required: true, description: '小石榴号' },
+          { name: 'id', type: 'string', required: true, description: '聚包盆号' },
           { name: 'page', type: 'int', required: false, description: '页码，默认1' },
           { name: 'limit', type: 'int', required: false, description: '每页数量，默认20' }
         ]
@@ -354,7 +354,7 @@ const apiGroups = ref([
         auth: true,
         expanded: false,
         params: [
-          { name: 'id', type: 'string', required: true, description: '被关注用户的小石榴号' }
+          { name: 'id', type: 'string', required: true, description: '被关注用户的聚包盆号' }
         ]
       },
       {
@@ -365,7 +365,7 @@ const apiGroups = ref([
         auth: true,
         expanded: false,
         params: [
-          { name: 'id', type: 'string', required: true, description: '被取消关注用户的小石榴号' }
+          { name: 'id', type: 'string', required: true, description: '被取消关注用户的聚包盆号' }
         ]
       },
       {
@@ -376,7 +376,7 @@ const apiGroups = ref([
         auth: true,
         expanded: false,
         params: [
-          { name: 'id', type: 'string', required: true, description: '目标用户的小石榴号' }
+          { name: 'id', type: 'string', required: true, description: '目标用户的聚包盆号' }
         ]
       },
       {
@@ -386,7 +386,7 @@ const apiGroups = ref([
         description: '获取指定用户的关注列表',
         expanded: false,
         params: [
-          { name: 'id', type: 'string', required: true, description: '小石榴号' },
+          { name: 'id', type: 'string', required: true, description: '聚包盆号' },
           { name: 'page', type: 'int', required: false, description: '页码，默认1' },
           { name: 'limit', type: 'int', required: false, description: '每页数量，默认20' }
         ]
@@ -398,7 +398,7 @@ const apiGroups = ref([
         description: '获取指定用户的粉丝列表',
         expanded: false,
         params: [
-          { name: 'id', type: 'string', required: true, description: '小石榴号' },
+          { name: 'id', type: 'string', required: true, description: '聚包盆号' },
           { name: 'page', type: 'int', required: false, description: '页码，默认1' },
           { name: 'limit', type: 'int', required: false, description: '每页数量，默认20' }
         ]
@@ -410,7 +410,7 @@ const apiGroups = ref([
         description: '获取与指定用户互相关注的用户列表',
         expanded: false,
         params: [
-          { name: 'id', type: 'string', required: true, description: '小石榴号' },
+          { name: 'id', type: 'string', required: true, description: '聚包盆号' },
           { name: 'page', type: 'int', required: false, description: '页码，默认1' },
           { name: 'limit', type: 'int', required: false, description: '每页数量，默认20' }
         ]
@@ -422,7 +422,7 @@ const apiGroups = ref([
         description: '获取指定用户的统计信息（关注数、粉丝数等）',
         expanded: false,
         params: [
-          { name: 'id', type: 'string', required: true, description: '小石榴号' }
+          { name: 'id', type: 'string', required: true, description: '聚包盆号' }
         ]
       }
     ]
@@ -1061,7 +1061,7 @@ const apiGroups = ref([
         auth: true,
         expanded: false,
         params: [
-          { name: 'user_id', type: 'string', required: true, description: '小石榴号' },
+          { name: 'user_id', type: 'string', required: true, description: '聚包盆号' },
           { name: 'nickname', type: 'string', required: true, description: '昵称' },
           { name: 'password', type: 'string', required: true, description: '密码' },
           { name: 'avatar', type: 'string', required: false, description: '头像URL' },

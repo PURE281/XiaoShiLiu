@@ -7,8 +7,8 @@ const path = require('path');
 const dbConfig = {
   host: 'localhost',
   user: 'root',
-  password: '123456',
-  database: 'xiaoshiliu',
+  password: 'MEVqTaP9XAzqR9!@1',
+  database: 'xiaoshiliu_community',
   charset: 'utf8mb4'
 };
 
