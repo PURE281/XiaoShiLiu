@@ -20,6 +20,11 @@ function handleReload() {
 function handleFloatingBtnReload() {
     // 刷新按钮触发时更新内容
     refreshKey.value++
+    
+    // 触发强制重新检查图片加载事件
+    setTimeout(() => {
+        document.dispatchEvent(new CustomEvent('force-recheck'))
+    }, 100)
 }
 
 onMounted(() => {

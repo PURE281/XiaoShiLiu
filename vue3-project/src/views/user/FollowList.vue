@@ -73,7 +73,7 @@ const fixedSliderStyle = computed(() => {
 async function loadUserList(type) {
   loading.value = true
   try {
-    const currentUserId = userStore.userInfo?.id
+    const currentUserId = userStore.userInfo?.user_id
 
     if (!currentUserId) {
       console.error('用户未登录，无法加载关注列表')

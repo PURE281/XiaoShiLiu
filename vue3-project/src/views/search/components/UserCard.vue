@@ -17,8 +17,9 @@
                         <span class="stat-item">笔记 · {{ formatNumber(user.notes) }}</span>
                     </div>
                 </div>
-                <FollowButton v-if="!isCurrentUser" :is-following="user.isFollowing" :user-id="user.id" :follow-text="getFollowText(user)"
-                    :following-text="getFollowingText(user)" @follow="handleFollow" @unfollow="handleUnfollow" />
+                <FollowButton v-if="!isCurrentUser" :is-following="user.isFollowing" :user-id="user.userId"
+                    :follow-text="getFollowText(user)" :following-text="getFollowingText(user)" @follow="handleFollow"
+                    @unfollow="handleUnfollow" />
             </div>
         </div>
     </div>
@@ -56,7 +57,7 @@ const userStore = useUserStore()
 const avatarLoaded = ref(false)
 
 // 监听用户数据变化，同步到store（仅在用户ID变化时初始化）
-watch(() => props.user.id, (newUserId, oldUserId) => {
+watch(() => props.user.userId, (newUserId, oldUserId) => {
     if (newUserId && newUserId !== oldUserId) {
         followStore.initUserFollowState(
             newUserId,
@@ -69,14 +70,14 @@ watch(() => props.user.id, (newUserId, oldUserId) => {
 
 // 判断是否为当前用户
 const isCurrentUser = computed(() => {
-  if (!userStore.isLoggedIn || !userStore.userInfo) {
-    return false
-  }
+    if (!userStore.isLoggedIn || !userStore.userInfo) {
+        return false
+    }
 
-  const currentUserId = userStore.userInfo.user_id // 当前用户的小石榴号
-  const userId = props.user.user_id || props.user.userId // 用户的小石榴号
+    const currentUserId = userStore.userInfo.user_id // 当前用户的小石榴号
+    const userId = props.user.user_id || props.user.userId // 用户的小石榴号
 
-  return currentUserId === userId
+    return currentUserId === userId
 })
 
 function formatNumber(num) {
@@ -84,7 +85,7 @@ function formatNumber(num) {
     if (num == null || isNaN(num)) {
         return '0'
     }
-    
+
     const numValue = Number(num)
     if (numValue >= 10000) {
         return (numValue / 10000).toFixed(1) + '万'

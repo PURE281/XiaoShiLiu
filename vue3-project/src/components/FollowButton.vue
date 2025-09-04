@@ -197,7 +197,7 @@ onUnmounted(() => {
     color: white;
 }
 
-.follow-btn:not(.following):hover { 
+.follow-btn:not(.following):hover {
     background: var(--primary-color-dark);
 }
 

@@ -144,7 +144,7 @@ export const useFollowStore = defineStore('follow', () => {
       const followed = user.followed || user.isFollowing || false
       const isMutual = user.isMutual || false
       const buttonType = user.buttonType || (followed ? 'unfollow' : 'follow')
-      initUserFollowState(user.id, followed, isMutual, buttonType)
+      initUserFollowState(user.user_id, followed, isMutual, buttonType)
     })
   }
 

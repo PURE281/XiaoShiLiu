@@ -870,7 +870,7 @@ const closeTagsModal = () => {
 const showPersonalityTags = async (item) => {
   try {
     // 调用API获取个性标签数据
-    const response = await fetch(`${apiConfig.baseURL}/users/${item.id}/personality-tags`, {
+    const response = await fetch(`${apiConfig.baseURL}/users/${item.user_id}/personality-tags`, {
       headers: getAuthHeaders()
     })
 

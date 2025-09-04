@@ -253,7 +253,7 @@ async function loadFollowsData(isLoadMore = false) {
     const response = await getFollowNotifications(params)
 
     // 批量查询关注状态，减少API请求次数
-    const userIds = (response.data?.notifications || []).map(item => item.from_user_auto_id || item.from_user_id)
+    const userIds = (response.data?.notifications || []).map(item => item.from_user_id)
     let followStatusMap = new Map()
 
     if (userIds.length > 0) {
@@ -281,7 +281,7 @@ async function loadFollowsData(isLoadMore = false) {
 
     // 转换后端数据格式为前端期望的格式
     const transformedData = (response.data?.notifications || []).map(item => {
-      const userIdForQuery = item.from_user_auto_id || item.from_user_id
+      const userIdForQuery = item.from_user_id
       const isFollowing = followStatusMap.get(userIdForQuery) || false
 
       // 根据关注状态生成动态文本
@@ -293,6 +293,7 @@ async function loadFollowsData(isLoadMore = false) {
       return {
         notificationId: item.id, // 通知ID，用于标记已读
         id: item.from_user_id, // 使用from_user_id字段（小石榴号）用于导航
+        from_user_id: item.from_user_id, // 添加from_user_id字段供FollowButton使用
         autoId: item.from_user_auto_id, // 自增ID，用于API调用
         username: item.from_nickname || '未知用户',
         avatar: item.from_avatar || new URL('@/assets/imgs/avatar.png', import.meta.url).href,
@@ -1314,8 +1315,8 @@ watch(isLoggedIn, async (newValue, oldValue) => {
                     </div>
                   </div>
                   <div class="follow-button">
-                    <FollowButton :is-following="item.isFollowing || false" :user-id="item.id" follow-text="回关"
-                      following-text="互相关注" @follow="handleFollow" @unfollow="handleUnfollow" />
+                    <FollowButton :is-following="item.isFollowing || false" :user-id="item.from_user_id"
+                      follow-text="回关" following-text="互相关注" @follow="handleFollow" @unfollow="handleUnfollow" />
                   </div>
                 </div>
               </div>

@@ -41,8 +41,7 @@ router.get('/', optionalAuth, async (req, res) => {
         ORDER BY p.view_count DESC
         LIMIT ? OFFSET ?
       `;
-      // 将数字参数转换为字符串以解决MySQL2参数绑定问题
-      queryParams = [isDraft, String(topPostsCount), String(limit), String(offset)];
+      queryParams = [isDraft, topPostsCount, limit, offset];
     } else {
       let whereConditions = [];
 
@@ -61,8 +60,7 @@ router.get('/', optionalAuth, async (req, res) => {
       }
 
       query += ` ORDER BY p.created_at DESC LIMIT ? OFFSET ?`;
-      // 将数字参数转换为字符串以解决MySQL2参数绑定问题
-      queryParams.push(String(limit), String(offset));
+      queryParams.push(limit, offset);
     }
 
     const [rows] = await pool.execute(query, queryParams);
@@ -327,7 +325,7 @@ router.get('/search', optionalAuth, async (req, res) => {
        WHERE p.is_draft = 0 AND (p.title LIKE ? OR p.content LIKE ?)
        ORDER BY p.created_at DESC
        LIMIT ? OFFSET ?`,
-      [`%${keyword}%`, `%${keyword}%`, String(limit), String(offset)]
+      [`%${keyword}%`, `%${keyword}%`, limit, offset]
     );
 
     // 获取每个笔记的图片、标签和用户点赞收藏状态
@@ -417,7 +415,7 @@ router.get('/:id/comments', optionalAuth, async (req, res) => {
        WHERE c.post_id = ? AND c.parent_id IS NULL
        ORDER BY c.created_at DESC
        LIMIT ? OFFSET ?`,
-      [postId, String(limit), String(offset)]
+      [postId, limit, offset]
     );
 
     // 为每个评论检查点赞状态

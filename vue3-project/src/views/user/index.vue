@@ -51,7 +51,7 @@ const openAvatarCropModal = () => {
 const handleProfileSaved = async (formData) => {
   try {
     // 调用API更新用户资料
-    const response = await userApi.updateUserInfo(userStore.userInfo.id, formData)
+    const response = await userApi.updateUserInfo(userStore.userInfo.user_id, formData)
 
     if (response.success) {
       // 更新本地用户信息
@@ -75,7 +75,7 @@ const formatNumber = (num) => {
   if (num == null || isNaN(num)) {
     return '0'
   }
-  
+
   const numValue = Number(num)
   if (numValue >= 10000) {
     return (numValue / 10000).toFixed(1) + '万'
@@ -85,8 +85,8 @@ const formatNumber = (num) => {
 
 // 获取用户统计信息
 const loadUserStats = async () => {
-  if (userStore.userInfo?.id) {
-    const stats = await userStore.getUserStats(userStore.userInfo.id)
+  if (userStore.userInfo?.user_id) {
+    const stats = await userStore.getUserStats(userStore.userInfo.user_id)
     if (stats) {
       userStats.value = stats
     }
@@ -134,7 +134,7 @@ function handleGlobalCollectEvent(data) {
 
 // 监听用户信息变化，重新获取统计信息
 let hasLoadedStatsOnce = false
-watch(() => userStore.userInfo?.id, (newUserId) => {
+watch(() => userStore.userInfo?.user_id, (newUserId) => {
   if (!newUserId) return
   if (hasLoadedStatsOnce) return
   hasLoadedStatsOnce = true
@@ -294,8 +294,8 @@ function handleCollect(data) {
   <div class="content-container">
     <div class="user-info" v-if="userStore.isLoggedIn">
       <div class="basic-info">
-        <img :src="userStore.userInfo?.avatar || defaultAvatar"
-          :alt="userStore.userInfo?.nickname || '用户头像'" class="avatar" @click="openAvatarCropModal">
+        <img :src="userStore.userInfo?.avatar || defaultAvatar" :alt="userStore.userInfo?.nickname || '用户头像'"
+          class="avatar" @click="openAvatarCropModal">
         <div class="user-basic">
           <div class="user-nickname">{{ userStore.userInfo?.nickname || '用户' }}</div>
           <div class="user-content">
@@ -362,7 +362,7 @@ function handleCollect(data) {
       <div class="content-item" :class="{ active: activeTab === 'notes' }"
         :style="{ transform: activeTab === 'notes' ? 'translateX(0%)' : 'translateX(-100%)' }">
         <div class="waterfall-container">
-          <WaterfallFlow :userId="userStore.userInfo?.id" :type="'posts'" :refreshKey="refreshKeys.notes"
+          <WaterfallFlow :userId="userStore.userInfo?.user_id" :type="'posts'" :refreshKey="refreshKeys.notes"
             @follow="handleFollow" @unfollow="handleUnfollow" @like="handleLike" @collect="handleCollect" />
         </div>
       </div>
@@ -371,8 +371,9 @@ function handleCollect(data) {
       <div class="content-item" :class="{ active: activeTab === 'collections' }"
         :style="{ transform: activeTab === 'collections' ? 'translateX(0%)' : activeTab === 'notes' ? 'translateX(100%)' : 'translateX(-100%)' }">
         <div class="waterfall-container">
-          <WaterfallFlow :userId="userStore.userInfo?.id" :type="'collections'" :refreshKey="refreshKeys.collections"
-            @follow="handleFollow" @unfollow="handleUnfollow" @like="handleLike" @collect="handleCollect" />
+          <WaterfallFlow :userId="userStore.userInfo?.user_id" :type="'collections'"
+            :refreshKey="refreshKeys.collections" @follow="handleFollow" @unfollow="handleUnfollow" @like="handleLike"
+            @collect="handleCollect" />
         </div>
       </div>
 
@@ -380,7 +381,7 @@ function handleCollect(data) {
       <div class="content-item" :class="{ active: activeTab === 'likes' }"
         :style="{ transform: activeTab === 'likes' ? 'translateX(0%)' : 'translateX(100%)' }">
         <div class="waterfall-container">
-          <WaterfallFlow :userId="userStore.userInfo?.id" :type="'likes'" :refreshKey="refreshKeys.likes"
+          <WaterfallFlow :userId="userStore.userInfo?.user_id" :type="'likes'" :refreshKey="refreshKeys.likes"
             @follow="handleFollow" @unfollow="handleUnfollow" @like="handleLike" @collect="handleCollect" />
         </div>
       </div>

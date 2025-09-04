@@ -25,7 +25,7 @@ router.get('/search', optionalAuth, async (req, res) => {
        WHERE u.nickname LIKE ? OR u.user_id LIKE ? 
        ORDER BY u.created_at DESC 
        LIMIT ? OFFSET ?`,
-      [`%${keyword}%`, `%${keyword}%`, String(limit), String(offset)]
+      [`%${keyword}%`, `%${keyword}%`, limit, offset]
     );
 
     // 检查关注状态（仅在用户已登录时）
@@ -100,17 +100,9 @@ router.get('/search', optionalAuth, async (req, res) => {
 router.get('/:id/personality-tags', async (req, res) => {
   try {
     const userIdParam = req.params.id;
-    // 通过小石榴号(user_id)或数字ID进行查找
-    let query, params;
-    if (/^\d+$/.test(userIdParam)) {
-      // 数字ID查询
-      query = 'SELECT gender, zodiac_sign, mbti, education, major, interests FROM users WHERE id = ?';
-      params = [userIdParam];
-    } else {
-      // 小石榴号查询
-      query = 'SELECT gender, zodiac_sign, mbti, education, major, interests FROM users WHERE user_id = ?';
-      params = [userIdParam];
-    }
+    // 始终通过小石榴号查找用户信息
+    const query = 'SELECT gender, zodiac_sign, mbti, education, major, interests FROM users WHERE user_id = ?';
+    const params = [userIdParam];
 
     const [rows] = await pool.execute(query, params);
 
@@ -198,7 +190,7 @@ router.get('/', async (req, res) => {
 
     const [rows] = await pool.execute(
       'SELECT id, user_id, nickname, avatar, bio, location, follow_count, fans_count, like_count, created_at FROM users ORDER BY created_at DESC LIMIT ? OFFSET ?',
-      [String(limit), String(offset)]
+      [limit, offset]
     );
 
     const [countResult] = await pool.execute('SELECT COUNT(*) as total FROM users');
@@ -235,19 +227,12 @@ router.get('/:id/posts', optionalAuth, async (req, res) => {
     const keyword = req.query.keyword;
     const sort = req.query.sort || 'created_at';
 
-    // 获取用户的数字ID
-    let userId;
-    if (/^\d+$/.test(userIdParam)) {
-      // 数字ID
-      userId = userIdParam;
-    } else {
-      // user_id格式，需要查询对应的数字ID
-      const [userRows] = await pool.execute('SELECT id FROM users WHERE user_id = ?', [userIdParam]);
-      if (userRows.length === 0) {
-        return res.status(404).json({ code: 404, message: '用户不存在' });
-      }
-      userId = userRows[0].id;
+    // 始终通过小石榴号查找对应的数字ID
+    const [userRows] = await pool.execute('SELECT id FROM users WHERE user_id = ?', [userIdParam]);
+    if (userRows.length === 0) {
+      return res.status(404).json({ code: 404, message: '用户不存在' });
     }
+    const userId = userRows[0].id;
 
     // 构建查询条件
     let whereConditions = ['p.user_id = ?', 'p.is_draft = 0'];
@@ -277,7 +262,7 @@ router.get('/:id/posts', optionalAuth, async (req, res) => {
       ${orderBy}
       LIMIT ? OFFSET ?
     `;
-    queryParams.push(String(limit), String(offset));
+    queryParams.push(limit, offset);
 
     const [rows] = await pool.execute(query, queryParams);
     // 获取每个笔记的图片、标签和用户点赞收藏状态
@@ -348,19 +333,12 @@ router.get('/:id/collections', optionalAuth, async (req, res) => {
     const offset = (page - 1) * limit;
     const currentUserId = req.user ? req.user.id : null;
 
-    // 获取用户的数字ID
-    let userId;
-    if (/^\d+$/.test(userIdParam)) {
-      // 数字ID
-      userId = userIdParam;
-    } else {
-      // user_id格式，需要查询对应的数字ID
-      const [userRows] = await pool.execute('SELECT id FROM users WHERE user_id = ?', [userIdParam]);
-      if (userRows.length === 0) {
-        return res.status(404).json({ code: 404, message: '用户不存在' });
-      }
-      userId = userRows[0].id;
+    // 始终通过小石榴号查找对应的数字ID
+    const [userRows] = await pool.execute('SELECT id FROM users WHERE user_id = ?', [userIdParam]);
+    if (userRows.length === 0) {
+      return res.status(404).json({ code: 404, message: '用户不存在' });
     }
+    const userId = userRows[0].id;
 
     const [rows] = await pool.execute(
       `SELECT p.*, u.nickname, u.avatar as user_avatar, u.user_id, u.location, c.created_at as collected_at
@@ -370,7 +348,7 @@ router.get('/:id/collections', optionalAuth, async (req, res) => {
        WHERE c.user_id = ? AND p.is_draft = 0
        ORDER BY c.created_at DESC
        LIMIT ? OFFSET ?`,
-      [userId, String(limit), String(offset)]
+      [userId, limit, offset]
     );
 
     // 获取每个笔记的图片、标签和用户点赞收藏状态
@@ -406,7 +384,7 @@ router.get('/:id/collections', optionalAuth, async (req, res) => {
     }
 
     const [countResult] = await pool.execute(
-      'SELECT COUNT(*) as total FROM collections c LEFT JOIN posts p ON c.post_id = p.id WHERE c.user_id = ? AND p.is_draft = 0', 
+      'SELECT COUNT(*) as total FROM collections c LEFT JOIN posts p ON c.post_id = p.id WHERE c.user_id = ? AND p.is_draft = 0',
       [userId]
     );
     const total = countResult[0].total;
@@ -439,19 +417,12 @@ router.get('/:id/likes', optionalAuth, async (req, res) => {
     const offset = (page - 1) * limit;
     const currentUserId = req.user ? req.user.id : null;
 
-    // 获取用户的数字ID
-    let userId;
-    if (/^\d+$/.test(userIdParam)) {
-      // 数字ID
-      userId = userIdParam;
-    } else {
-      // user_id格式，需要查询对应的数字ID
-      const [userRows] = await pool.execute('SELECT id FROM users WHERE user_id = ?', [userIdParam]);
-      if (userRows.length === 0) {
-        return res.status(404).json({ code: 404, message: '用户不存在' });
-      }
-      userId = userRows[0].id;
+    // 始终通过小石榴号查找对应的数字ID
+    const [userRows] = await pool.execute('SELECT id FROM users WHERE user_id = ?', [userIdParam]);
+    if (userRows.length === 0) {
+      return res.status(404).json({ code: 404, message: '用户不存在' });
     }
+    const userId = userRows[0].id;
 
     // 查询笔记列表
     const [rows] = await pool.execute(
@@ -462,7 +433,7 @@ router.get('/:id/likes', optionalAuth, async (req, res) => {
        WHERE l.user_id = ? AND l.target_type = 1 AND p.is_draft = 0
        ORDER BY l.created_at DESC
        LIMIT ? OFFSET ?`,
-      [userId, String(limit), String(offset)]
+      [userId, limit, offset]
     );
 
     // 获取每个笔记的图片、标签和用户点赞收藏状态
@@ -498,7 +469,7 @@ router.get('/:id/likes', optionalAuth, async (req, res) => {
     }
 
     const [countResult] = await pool.execute(
-      'SELECT COUNT(*) as total FROM likes l LEFT JOIN posts p ON l.target_id = p.id WHERE l.user_id = ? AND l.target_type = 1 AND p.is_draft = 0', 
+      'SELECT COUNT(*) as total FROM likes l LEFT JOIN posts p ON l.target_id = p.id WHERE l.user_id = ? AND l.target_type = 1 AND p.is_draft = 0',
       [userId]
     );
     const total = countResult[0].total;
@@ -529,16 +500,12 @@ router.post('/:id/follow', authenticateToken, async (req, res) => {
     const followerId = req.user.id;
 
     // 获取被关注用户的数字ID
-    let userId;
-    if (/^\d+$/.test(userIdParam)) {
-      userId = userIdParam;
-    } else {
-      const [userRows] = await pool.execute('SELECT id FROM users WHERE user_id = ?', [userIdParam]);
-      if (userRows.length === 0) {
-        return res.status(404).json({ code: 404, message: '用户不存在' });
-      }
-      userId = userRows[0].id;
+    // 始终通过小石榴号查找对应的数字ID
+    const [userRows] = await pool.execute('SELECT id FROM users WHERE user_id = ?', [userIdParam]);
+    if (userRows.length === 0) {
+      return res.status(404).json({ code: 404, message: '用户不存在' });
     }
+    const userId = userRows[0].id;
 
     // 不能关注自己
     if (followerId == userId) {
@@ -589,17 +556,12 @@ router.delete('/:id/follow', authenticateToken, async (req, res) => {
     const userIdParam = req.params.id;
     const followerId = req.user.id;
 
-    // 获取被关注用户的数字ID
-    let userId;
-    if (/^\d+$/.test(userIdParam)) {
-      userId = userIdParam;
-    } else {
-      const [userRows] = await pool.execute('SELECT id FROM users WHERE user_id = ?', [userIdParam]);
-      if (userRows.length === 0) {
-        return res.status(404).json({ code: 404, message: '用户不存在' });
-      }
-      userId = userRows[0].id;
+    // 始终通过小石榴号查找对应的数字ID
+    const [userRows] = await pool.execute('SELECT id FROM users WHERE user_id = ?', [userIdParam]);
+    if (userRows.length === 0) {
+      return res.status(404).json({ code: 404, message: '用户不存在' });
     }
+    const userId = userRows[0].id;
 
     // 删除关注记录
     const [result] = await pool.execute(
@@ -640,16 +602,12 @@ router.get('/:id/follow-status', optionalAuth, async (req, res) => {
     const followerId = req.user ? req.user.id : null;
 
     // 获取用户的数字ID
-    let userId;
-    if (/^\d+$/.test(userIdParam)) {
-      userId = userIdParam;
-    } else {
-      const [userRows] = await pool.execute('SELECT id FROM users WHERE user_id = ?', [userIdParam]);
-      if (userRows.length === 0) {
-        return res.status(404).json({ code: 404, message: '用户不存在' });
-      }
-      userId = userRows[0].id;
+    // 始终通过小石榴号查找对应的数字ID
+    const [userRows] = await pool.execute('SELECT id FROM users WHERE user_id = ?', [userIdParam]);
+    if (userRows.length === 0) {
+      return res.status(404).json({ code: 404, message: '用户不存在' });
     }
+    const userId = userRows[0].id;
 
     let isFollowing = false;
     let isMutual = false;
@@ -709,17 +667,12 @@ router.get('/:id/following', optionalAuth, async (req, res) => {
     const offset = (page - 1) * limit;
     const currentUserId = req.user ? req.user.id : null;
 
-    // 获取用户的数字ID
-    let userId;
-    if (/^\d+$/.test(userIdParam)) {
-      userId = userIdParam;
-    } else {
-      const [userRows] = await pool.execute('SELECT id FROM users WHERE user_id = ?', [userIdParam]);
-      if (userRows.length === 0) {
-        return res.status(404).json({ code: 404, message: '用户不存在' });
-      }
-      userId = userRows[0].id;
+    // 始终通过小石榴号查找对应的数字ID
+    const [userRows] = await pool.execute('SELECT id FROM users WHERE user_id = ?', [userIdParam]);
+    if (userRows.length === 0) {
+      return res.status(404).json({ code: 404, message: '用户不存在' });
     }
+    const userId = userRows[0].id;
 
     // 查询所有关注的用户（包括互相关注）
     const [rows] = await pool.execute(
@@ -730,7 +683,7 @@ router.get('/:id/following', optionalAuth, async (req, res) => {
        WHERE f.follower_id = ?
        ORDER BY f.created_at DESC
        LIMIT ? OFFSET ?`,
-      [userId, String(limit), String(offset)]
+      [userId, limit, offset]
     );
 
     // 检查当前用户与这些用户的关注状态
@@ -809,17 +762,12 @@ router.get('/:id/followers', optionalAuth, async (req, res) => {
 
     console.log(`获取粉丝列表 - 用户ID: ${userIdParam}, 当前用户ID: ${currentUserId}`);
 
-    // 获取用户的数字ID
-    let userId;
-    if (/^\d+$/.test(userIdParam)) {
-      userId = userIdParam;
-    } else {
-      const [userRows] = await pool.execute('SELECT id FROM users WHERE user_id = ?', [userIdParam]);
-      if (userRows.length === 0) {
-        return res.status(404).json({ code: 404, message: '用户不存在' });
-      }
-      userId = userRows[0].id;
+    // 始终通过小石榴号查找对应的数字ID
+    const [userRows] = await pool.execute('SELECT id FROM users WHERE user_id = ?', [userIdParam]);
+    if (userRows.length === 0) {
+      return res.status(404).json({ code: 404, message: '用户不存在' });
     }
+    const userId = userRows[0].id;
 
     const [rows] = await pool.execute(
       `SELECT u.id, u.user_id, u.nickname, u.avatar, u.bio, u.location, u.follow_count, u.fans_count, u.like_count, u.created_at,
@@ -903,17 +851,12 @@ router.get('/:id/mutual-follows', optionalAuth, async (req, res) => {
 
     console.log(`获取互关列表 - 用户ID: ${userIdParam}, 当前用户ID: ${currentUserId}`);
 
-    // 获取用户的数字ID
-    let userId;
-    if (/^\d+$/.test(userIdParam)) {
-      userId = userIdParam;
-    } else {
-      const [userRows] = await pool.execute('SELECT id FROM users WHERE user_id = ?', [userIdParam]);
-      if (userRows.length === 0) {
-        return res.status(404).json({ code: 404, message: '用户不存在' });
-      }
-      userId = userRows[0].id;
+    // 始终通过小石榴号查找对应的数字ID
+    const [userRows] = await pool.execute('SELECT id FROM users WHERE user_id = ?', [userIdParam]);
+    if (userRows.length === 0) {
+      return res.status(404).json({ code: 404, message: '用户不存在' });
     }
+    const userId = userRows[0].id;
 
     // 查询互关用户
     const [rows] = await pool.execute(
@@ -931,7 +874,7 @@ router.get('/:id/mutual-follows', optionalAuth, async (req, res) => {
        )
        ORDER BY u.created_at DESC
        LIMIT ? OFFSET ?`,
-      [userId, userId, String(limit), String(offset)]
+      [userId, userId, limit, offset]
     );
 
     // 检查当前用户与这些用户的关注状态
@@ -1014,17 +957,12 @@ router.get('/:id/stats', async (req, res) => {
     const userIdParam = req.params.id;
     console.log(`获取用户统计信息 - 用户ID: ${userIdParam}`);
 
-    // 获取用户的数字ID
-    let userId;
-    if (/^\d+$/.test(userIdParam)) {
-      userId = userIdParam;
-    } else {
-      const [userRows] = await pool.execute('SELECT id FROM users WHERE user_id = ?', [userIdParam]);
-      if (userRows.length === 0) {
-        return res.status(404).json({ code: 404, message: '用户不存在' });
-      }
-      userId = userRows[0].id;
+    // 通过小石榴号查找对应的数字ID
+    const [userRows] = await pool.execute('SELECT id FROM users WHERE user_id = ?', [userIdParam]);
+    if (userRows.length === 0) {
+      return res.status(404).json({ code: 404, message: '用户不存在' });
     }
+    const userId = userRows[0].id;
 
     // 获取用户基本统计信息
     const [userStats] = await pool.execute(
@@ -1081,17 +1019,12 @@ router.put('/:id', authenticateToken, async (req, res) => {
 
     console.log(`用户更新资料 - 目标用户ID: ${userIdParam}, 当前用户ID: ${currentUserId}`);
 
-    // 获取目标用户的数字ID
-    let targetUserId;
-    if (/^\d+$/.test(userIdParam)) {
-      targetUserId = parseInt(userIdParam);
-    } else {
-      const [userRows] = await pool.execute('SELECT id FROM users WHERE user_id = ?', [userIdParam]);
-      if (userRows.length === 0) {
-        return res.status(404).json({ code: 404, message: '用户不存在' });
-      }
-      targetUserId = userRows[0].id;
+    // 始终通过小石榴号查找对应的数字ID
+    const [userRows] = await pool.execute('SELECT id FROM users WHERE user_id = ?', [userIdParam]);
+    if (userRows.length === 0) {
+      return res.status(404).json({ code: 404, message: '用户不存在' });
     }
+    const targetUserId = userRows[0].id;
 
     // 检查是否是用户本人
     if (currentUserId !== targetUserId) {
@@ -1201,17 +1134,12 @@ router.put('/:id/password', authenticateToken, async (req, res) => {
       return res.status(400).json({ code: 400, message: '新密码长度不能少于6位' });
     }
 
-    // 获取目标用户的数字ID
-    let targetUserId;
-    if (/^\d+$/.test(userIdParam)) {
-      targetUserId = parseInt(userIdParam);
-    } else {
-      const [userRows] = await pool.execute('SELECT id FROM users WHERE user_id = ?', [userIdParam]);
-      if (userRows.length === 0) {
-        return res.status(404).json({ code: 404, message: '用户不存在' });
-      }
-      targetUserId = userRows[0].id;
+    // 始终通过小石榴号查找对应的数字ID
+    const [userRows] = await pool.execute('SELECT id FROM users WHERE user_id = ?', [userIdParam]);
+    if (userRows.length === 0) {
+      return res.status(404).json({ code: 404, message: '用户不存在' });
     }
+    const targetUserId = userRows[0].id;
 
     // 检查是否是用户本人
     if (currentUserId !== targetUserId) {
@@ -1219,12 +1147,12 @@ router.put('/:id/password', authenticateToken, async (req, res) => {
     }
 
     // 验证当前密码（使用SHA2哈希比较）
-    const [userRows] = await pool.execute(
+    const [passwordRows] = await pool.execute(
       'SELECT password FROM users WHERE id = ? AND password = SHA2(?, 256)',
       [targetUserId, currentPassword]
     );
 
-    if (userRows.length === 0) {
+    if (passwordRows.length === 0) {
       return res.status(400).json({ code: 400, message: '当前密码错误' });
     }
 

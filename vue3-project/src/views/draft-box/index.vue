@@ -231,7 +231,7 @@ const loadDrafts = async () => {
     loading.value = true
 
     // 检查用户是否已登录
-    if (!userStore.userInfo || !userStore.userInfo.id) {
+    if (!userStore.userInfo || !userStore.userInfo.user_id) {
       showMessage('请先登录', 'error')
       return
     }
@@ -242,7 +242,7 @@ const loadDrafts = async () => {
       keyword: searchKeyword.value,
       category: selectedCategory.value,
       sort: 'created_at',
-      user_id: userStore.userInfo.id
+      user_id: userStore.userInfo.user_id
     }
 
     const response = await getDraftPosts(params)

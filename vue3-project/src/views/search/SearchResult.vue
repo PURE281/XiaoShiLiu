@@ -203,6 +203,11 @@ function handleFloatingBtnReload() {
 
     eventStore.triggerFloatingBtnReload()
 
+    // 触发强制重新检查图片加载事件
+    setTimeout(() => {
+        document.dispatchEvent(new CustomEvent('force-recheck'))
+    }, 100)
+
     setTimeout(() => {
         isTagLoading.value = false
     }, 700)

@@ -171,15 +171,15 @@ const getUserStats = async () => {
 
 // 获取关注状态
 const getFollowStatus = async () => {
-  if (isCurrentUser.value || !userInfo.value.id) return
+  if (isCurrentUser.value || !userInfo.value.user_id) return
 
   try {
-    const result = await followStore.fetchFollowStatus(userInfo.value.id)
+    const result = await followStore.fetchFollowStatus(userInfo.value.user_id)
     if (result.success) {
       followStatus.value = result.data.followed
       // 同时初始化 followStore 中的状态
       followStore.initUserFollowState(
-        userInfo.value.id,
+        userInfo.value.user_id,
         result.data.followed,
         result.data.isMutual || false,
         result.data.buttonType || 'follow'
@@ -243,7 +243,7 @@ onMounted(async () => {
         </div>
 
         <div class="follow-button-wrapper" v-if="!isCurrentUser">
-          <FollowButton :user-id="userInfo.id" :is-following="followStatus" />
+          <FollowButton :user-id="userInfo.user_id" :is-following="followStatus" />
         </div>
       </div>
       <div class="user-desc">
