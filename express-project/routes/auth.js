@@ -275,13 +275,13 @@ router.post('/logout', authenticateToken, async (req, res) => {
 // 获取当前用户信息
 router.get('/me', authenticateToken, async (req, res) => {
   try {
+    console.log(req.user);
     const userId = req.user.id;
-
     const [userRows] = await pool.execute(
       'SELECT id, user_id, nickname, avatar, bio, location, follow_count, fans_count, like_count, is_active, created_at, gender, zodiac_sign, mbti, education, major, interests FROM users WHERE id = ?',
-      [userId]
+      [String(userId)]
     );
-
+    console.log(userRows);
     if (userRows.length === 0) {
       return res.status(404).json({ code: 404, message: '用户不存在' });
     }
@@ -298,7 +298,7 @@ router.get('/me', authenticateToken, async (req, res) => {
         user.interests = null;
       }
     }
-
+    console.log(user);
     res.json({
       code: 200,
       message: 'success',

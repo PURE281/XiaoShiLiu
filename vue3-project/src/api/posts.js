@@ -27,7 +27,7 @@ function transformPostData(backendPost) {
     path: `/post/${backendPost.id}`,
     category: backendPost.category || 'general',
     author_auto_id: backendPost.author_auto_id, // 作者自增ID
-    author_account: backendPost.author_account, // 作者小石榴号
+    author_account: backendPost.author_account, // 作者聚包盆号
     user_id: backendPost.user_id, // 保持兼容性
     // 保留原始数据以备需要
     originalData: {

@@ -215,11 +215,11 @@ const userHoverConfig = computed(() => ({
     },
     onFollow: (userInfo) => {
         const userId = props.user.user_id || props.user.userId
-        handleFollow(userId) // 使用小石榴号进行关注操作
+        handleFollow(userId) // 使用聚包盆号进行关注操作
     },
     onUnfollow: (userInfo) => {
         const userId = props.user.user_id || props.user.userId
-        handleUnfollow(userId) // 使用小石榴号进行取消关注操作
+        handleUnfollow(userId) // 使用聚包盆号进行取消关注操作
     },
     delay: 500
 }))

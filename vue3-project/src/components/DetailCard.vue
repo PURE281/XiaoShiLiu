@@ -443,7 +443,7 @@ const animationStyle = computed(() => {
 })
 
 const authorData = computed(() => {
-  // 使用小石榴号进行用户跳转
+  // 使用聚包盆号进行用户跳转
   const userId = props.item.author_account || props.item.user_id || props.item.originalData?.userId
   const followState = followStore.getUserFollowState(userId)
 

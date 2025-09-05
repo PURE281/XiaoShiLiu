@@ -218,7 +218,7 @@ const handleSubmit = async () => {
     }
 
     if (isUserIdEmpty) {
-      unifiedMessage.value = '请输入小石榴号'
+      unifiedMessage.value = '请输入聚包盆号'
       return
     }
 

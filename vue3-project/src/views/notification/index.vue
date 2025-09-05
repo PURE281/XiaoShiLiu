@@ -639,7 +639,7 @@ const getUserHoverConfig = (userId) => {
         console.error('获取用户笔记封面失败:', error)
       }
 
-      // 获取最新的关注状态 - 使用小石榴号来获取关注状态
+      // 获取最新的关注状态 - 使用聚包盆号来获取关注状态
       let followStatus = { followed: false, isMutual: false, buttonType: 'follow' }
       try {
         const followResponse = await followStore.fetchFollowStatus(userId)

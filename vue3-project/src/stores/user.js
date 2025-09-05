@@ -154,7 +154,7 @@ export const useUserStore = defineStore('user', () => {
   const getCurrentUser = async () => {
     try {
       const response = await authApi.getCurrentUser()
-      
+      console.log('获取当前用户信息:', response)
       if (response.success && response.data) {
         userInfo.value = response.data
         // 更新localStorage中的用户信息

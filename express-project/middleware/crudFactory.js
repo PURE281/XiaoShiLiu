@@ -274,9 +274,14 @@ function createCrudHandlers(config) {
         }
       }
 
+      // 确保limit和offset是有效的数字
+      const numericLimit = parseInt(limit) || 20
+      const numericOffset = (parseInt(page) - 1) * numericLimit
+
       const result = await getRecords(table, {
         page,
-        limit,
+        limit: numericLimit,
+        offset: numericOffset,
         where: whereClause,
         params,
         orderBy

@@ -182,7 +182,7 @@ async function getRecords(table, options = {}) {
 
   // 获取数据
   const dataQuery = `SELECT ${fields} FROM ${table} ${whereClause} ORDER BY ${orderBy} LIMIT ? OFFSET ?`
-  const [dataResult] = await pool.execute(dataQuery, [...params, limit, offset])
+  const [dataResult] = await pool.execute(dataQuery, [...params, String(limit), String(offset)])
 
   return {
     data: dataResult,
