@@ -720,5 +720,10 @@ export const adminApi = {
   // 获取单个管理员详情（认证路由）
   getAdminDetailAuth(adminId) {
     return request.get(`/auth/admin/admins/${adminId}`)
+  },
+
+  // 获取动态
+  getMonitorActivities() {
+    return request.get('/admin/monitor/activities')
   }
 }

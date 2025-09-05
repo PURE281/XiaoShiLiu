@@ -41,12 +41,12 @@ router.get('/comments', authenticateToken, async (req, res) => {
       ORDER BY n.created_at DESC LIMIT ? OFFSET ?
     `;
 
-    const [rows] = await pool.execute(query, [userId, userId, String(limit), String(offset)]);
+    const [rows] = await pool.execute(query, [userId.toString(), userId.toString(), limit.toString(), offset.toString()]);
 
     // 获取总数
     const [countResult] = await pool.execute(
       'SELECT COUNT(*) as total FROM notifications WHERE user_id = ? AND type IN (4, 5, 7)',
-      [userId]
+      [userId.toString()]
     );
     const total = countResult[0].total;
 
@@ -92,12 +92,12 @@ router.get('/likes', authenticateToken, async (req, res) => {
       ORDER BY n.created_at DESC LIMIT ? OFFSET ?
     `;
 
-    const [rows] = await pool.execute(query, [userId, String(limit), String(offset)]);
+    const [rows] = await pool.execute(query, [userId.toString(), limit.toString(), offset.toString()]);
 
     // 获取总数
     const [countResult] = await pool.execute(
       'SELECT COUNT(*) as total FROM notifications WHERE user_id = ? AND type IN (1, 2)',
-      [userId]
+      [userId.toString()]
     );
     const total = countResult[0].total;
 
@@ -140,12 +140,12 @@ router.get('/follows', authenticateToken, async (req, res) => {
       ORDER BY n.created_at DESC LIMIT ? OFFSET ?
     `;
 
-    const [rows] = await pool.execute(query, [userId, String(limit), String(offset)]);
+    const [rows] = await pool.execute(query, [userId.toString(), limit.toString(), offset.toString()]);
 
     // 获取总数
     const [countResult] = await pool.execute(
       'SELECT COUNT(*) as total FROM notifications WHERE user_id = ? AND type = ?',
-      [userId, 6]
+      [userId.toString(), '6']
     );
     const total = countResult[0].total;
 
@@ -191,12 +191,12 @@ router.get('/collections', authenticateToken, async (req, res) => {
       ORDER BY n.created_at DESC LIMIT ? OFFSET ?
     `;
 
-    const [rows] = await pool.execute(query, [userId, String(limit), String(offset)]);
+    const [rows] = await pool.execute(query, [userId.toString(), limit.toString(), offset.toString()]);
 
     // 获取总数
     const [countResult] = await pool.execute(
       'SELECT COUNT(*) as total FROM notifications WHERE user_id = ? AND type = ?',
-      [userId, 3]
+      [userId.toString(), '3']
     );
     const total = countResult[0].total;
 
@@ -238,24 +238,24 @@ router.get('/', authenticateToken, async (req, res) => {
       LEFT JOIN users u ON n.sender_id = u.id
       WHERE n.user_id = ?
     `;
-    let queryParams = [userId];
+    let queryParams = [userId.toString()];
 
     if (type) {
       query += ` AND n.type = ?`;
-      queryParams.push(type);
+      queryParams.push(type.toString());
     }
 
     query += ` ORDER BY n.created_at DESC LIMIT ? OFFSET ?`;
-    queryParams.push(String(limit), String(offset));
+    queryParams.push(limit.toString(), offset.toString());
 
     const [rows] = await pool.execute(query, queryParams);
 
     // 获取总数
     let countQuery = 'SELECT COUNT(*) as total FROM notifications WHERE user_id = ?';
-    let countParams = [userId];
+    let countParams = [userId.toString()];
     if (type) {
       countQuery += ' AND type = ?';
-      countParams.push(type);
+      countParams.push(type.toString());
     }
 
     const [countResult] = await pool.execute(countQuery, countParams);
@@ -264,7 +264,7 @@ router.get('/', authenticateToken, async (req, res) => {
     // 获取未读数量
     const [unreadResult] = await pool.execute(
       'SELECT COUNT(*) as unread FROM notifications WHERE user_id = ? AND is_read = 0',
-      [userId]
+      [userId.toString()]
     );
     const unread = unreadResult[0].unread;
 
@@ -297,7 +297,7 @@ router.put('/:id/read', authenticateToken, async (req, res) => {
     // 验证通知是否属于当前用户
     const [notificationRows] = await pool.execute(
       'SELECT id FROM notifications WHERE id = ? AND user_id = ?',
-      [notificationId, userId]
+      [notificationId.toString(), userId.toString()]
     );
 
     if (notificationRows.length === 0) {
@@ -307,7 +307,7 @@ router.put('/:id/read', authenticateToken, async (req, res) => {
     // 标记为已读
     await pool.execute(
       'UPDATE notifications SET is_read = 1 WHERE id = ?',
-      [notificationId]
+      [notificationId.toString()]
     );
 
     res.json({ code: 200, message: '标记成功' });
@@ -325,7 +325,7 @@ router.put('/read-all', authenticateToken, async (req, res) => {
     // 标记所有通知为已读
     await pool.execute(
       'UPDATE notifications SET is_read = 1 WHERE user_id = ? AND is_read = 0',
-      [userId]
+      [userId.toString()]
     );
 
 
@@ -345,7 +345,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     // 验证通知是否属于当前用户
     const [result] = await pool.execute(
       'DELETE FROM notifications WHERE id = ? AND user_id = ?',
-      [notificationId, userId]
+      [notificationId.toString(), userId.toString()]
     );
 
     if (result.affectedRows === 0) {
@@ -374,7 +374,7 @@ router.get('/unread-count-by-type', authenticateToken, async (req, res) => {
         COUNT(*) as total
       FROM notifications 
       WHERE user_id = ? AND is_read = 0`,
-      [userId]
+      [userId.toString()]
     );
 
     const counts = result[0];
@@ -402,7 +402,7 @@ router.get('/unread-count', authenticateToken, async (req, res) => {
 
     const [result] = await pool.execute(
       'SELECT COUNT(*) as count FROM notifications WHERE user_id = ? AND is_read = 0',
-      [userId]
+      [userId.toString()]
     );
 
     res.json({

@@ -10,7 +10,7 @@ async function deleteCommentRecursive(commentId) {
   let deletedCount = 0;
   
   // 获取所有子评论
-  const [children] = await pool.execute('SELECT id FROM comments WHERE parent_id = ?', [commentId]);
+  const [children] = await pool.execute('SELECT id FROM comments WHERE parent_id = ?', [commentId.toString()]);
 
   // 递归删除子评论
   for (const child of children) {
@@ -18,10 +18,10 @@ async function deleteCommentRecursive(commentId) {
   }
 
   // 删除当前评论的点赞记录
-  await pool.execute('DELETE FROM likes WHERE target_type = 2 AND target_id = ?', [commentId]);
+  await pool.execute('DELETE FROM likes WHERE target_type = 2 AND target_id = ?', [commentId.toString()]);
 
   // 删除当前评论
-  await pool.execute('DELETE FROM comments WHERE id = ?', [commentId]);
+  await pool.execute('DELETE FROM comments WHERE id = ?', [commentId.toString()]);
   
   // 当前评论也算一个
   deletedCount += 1;
@@ -50,7 +50,7 @@ router.get('/', optionalAuth, async (req, res) => {
        WHERE c.post_id = ? AND c.parent_id IS NULL
        ORDER BY c.created_at DESC
        LIMIT ? OFFSET ?`,
-      [postId, String(limit), String(offset)]
+      [postId.toString(), limit.toString(), offset.toString()]
     );
 
     // 为每个评论检查点赞状态
@@ -58,7 +58,7 @@ router.get('/', optionalAuth, async (req, res) => {
       if (currentUserId) {
         const [likeResult] = await pool.execute(
           'SELECT id FROM likes WHERE user_id = ? AND target_type = 2 AND target_id = ?',
-          [currentUserId, comment.id]
+          [currentUserId.toString(), comment.id.toString()]
         );
         comment.liked = likeResult.length > 0;
       } else {
@@ -68,7 +68,7 @@ router.get('/', optionalAuth, async (req, res) => {
       // 获取子评论数量
       const [childCount] = await pool.execute(
         'SELECT COUNT(*) as count FROM comments WHERE parent_id = ?',
-        [comment.id]
+        [comment.id.toString()]
       );
       comment.reply_count = childCount[0].count;
     }
@@ -76,7 +76,7 @@ router.get('/', optionalAuth, async (req, res) => {
     // 获取总数
     const [countResult] = await pool.execute(
       'SELECT COUNT(*) as total FROM comments WHERE post_id = ? AND parent_id IS NULL',
-      [postId]
+      [postId.toString()]
     );
     const total = countResult[0].total;
 
@@ -111,14 +111,14 @@ router.post('/', authenticateToken, async (req, res) => {
     }
 
     // 验证笔记是否存在
-    const [postRows] = await pool.execute('SELECT id FROM posts WHERE id = ?', [post_id]);
+    const [postRows] = await pool.execute('SELECT id FROM posts WHERE id = ?', [post_id.toString()]);
     if (postRows.length === 0) {
       return res.status(404).json({ code: 404, message: '笔记不存在' });
     }
 
     // 如果是回复评论，验证父评论是否存在
     if (parent_id) {
-      const [parentRows] = await pool.execute('SELECT id FROM comments WHERE id = ?', [parent_id]);
+      const [parentRows] = await pool.execute('SELECT id FROM comments WHERE id = ?', [parent_id.toString()]);
       if (parentRows.length === 0) {
         return res.status(404).json({ code: 404, message: '父评论不存在' });
       }
@@ -127,18 +127,18 @@ router.post('/', authenticateToken, async (req, res) => {
     // 插入评论
     const [result] = await pool.execute(
       'INSERT INTO comments (post_id, user_id, content, parent_id) VALUES (?, ?, ?, ?)',
-      [post_id, userId, content, parent_id || null]
+      [post_id.toString(), userId.toString(), content, parent_id ? parent_id.toString() : null]
     );
 
     const commentId = result.insertId;
 
     // 更新笔记评论数
-    await pool.execute('UPDATE posts SET comment_count = comment_count + 1 WHERE id = ?', [post_id]);
+    await pool.execute('UPDATE posts SET comment_count = comment_count + 1 WHERE id = ?', [post_id.toString()]);
 
     // 创建通知
     if (parent_id) {
       // 回复评论，给被回复的评论作者发通知
-      const [parentCommentResult] = await pool.execute('SELECT user_id FROM comments WHERE id = ?', [parent_id]);
+      const [parentCommentResult] = await pool.execute('SELECT user_id FROM comments WHERE id = ?', [parent_id.toString()]);
       if (parentCommentResult.length > 0) {
         const parentUserId = parentCommentResult[0].user_id;
         // 不给自己发通知
@@ -149,7 +149,7 @@ router.post('/', authenticateToken, async (req, res) => {
       }
     } else {
       // 评论笔记，给笔记作者发通知
-      const [postResult] = await pool.execute('SELECT user_id FROM posts WHERE id = ?', [post_id]);
+      const [postResult] = await pool.execute('SELECT user_id FROM posts WHERE id = ?', [post_id.toString()]);
       if (postResult.length > 0) {
         const postUserId = postResult[0].user_id;
         // 不给自己发通知
@@ -223,7 +223,7 @@ router.get('/:id/replies', optionalAuth, async (req, res) => {
        WHERE c.parent_id = ?
        ORDER BY c.created_at ASC
        LIMIT ? OFFSET ?`,
-      [parentId, String(limit), String(offset)]
+      [parentId.toString(), limit.toString(), offset.toString()]
     );
 
     // 为每个评论检查点赞状态
@@ -231,7 +231,7 @@ router.get('/:id/replies', optionalAuth, async (req, res) => {
       if (currentUserId) {
         const [likeResult] = await pool.execute(
           'SELECT id FROM likes WHERE user_id = ? AND target_type = 2 AND target_id = ?',
-          [currentUserId, comment.id]
+          [currentUserId.toString(), comment.id.toString()]
         );
         comment.liked = likeResult.length > 0;
       } else {
@@ -242,7 +242,7 @@ router.get('/:id/replies', optionalAuth, async (req, res) => {
     // 获取总数
     const [countResult] = await pool.execute(
       'SELECT COUNT(*) as total FROM comments WHERE parent_id = ?',
-      [parentId]
+      [parentId.toString()]
     );
     const total = countResult[0].total;
 
@@ -277,7 +277,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     // 验证评论是否存在并且是当前用户发布的
     const [commentRows] = await pool.execute(
       'SELECT id, post_id, user_id, parent_id FROM comments WHERE id = ?',
-      [commentId]
+      [commentId.toString()]
     );
 
     if (commentRows.length === 0) {
@@ -295,7 +295,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     const deletedCount = await deleteCommentRecursive(commentId);
 
     // 根据实际删除的评论数量更新笔记的评论计数
-    await pool.execute('UPDATE posts SET comment_count = comment_count - ? WHERE id = ?', [deletedCount, comment.post_id]);
+    await pool.execute('UPDATE posts SET comment_count = comment_count - ? WHERE id = ?', [deletedCount.toString(), comment.post_id.toString()]);
 
     console.log(`删除评论成功 - 用户ID: ${userId}, 评论ID: ${commentId}`);
 

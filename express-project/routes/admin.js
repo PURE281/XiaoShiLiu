@@ -2,15 +2,13 @@ const express = require('express')
 const router = express.Router()
 const { pool } = require('../config/database')
 const { createCrudHandlers } = require('../middleware/crudFactory')
-const { recordExists, getRecords } = require('../utils/dbHelper')
+const { recordExists } = require('../utils/dbHelper')
 const { adminAuth, uploadBase64ToImageHost } = require('../utils/uploadHelper')
 const {
   validateLikeOrFavoriteData,
   validateFollowData,
   validateNotificationData
 } = require('../utils/validationHelpers')
-const { success, error, handleError } = require('../utils/responseHelper')
-const { authenticateToken } = require('../middleware/auth')
 
 // 创建笔记
 // Posts CRUD 配置
@@ -40,7 +38,7 @@ const postsCrudConfig = {
     const { user_id, images, image_urls, tags } = data
 
     // 检查用户是否存在
-    const [userResult] = await pool.execute('SELECT id FROM users WHERE id = ?', [user_id])
+    const [userResult] = await pool.execute('SELECT id FROM users WHERE id = ?', [String(user_id)])
     if (userResult.length === 0) {
       throw new Error('用户不存在')
     }
@@ -120,7 +118,7 @@ const postsCrudConfig = {
           if (cleanUrl && !cleanUrl.startsWith('data:image/')) {
             await pool.execute(
               'INSERT INTO post_images (post_id, image_url) VALUES (?, ?)',
-              [postId, cleanUrl]
+              [String(postId), cleanUrl]
             )
           }
         }
@@ -143,14 +141,14 @@ const postsCrudConfig = {
           )
 
           if (existingTag.length > 0) {
-            tagId = existingTag[0].id
+            tagId = String(existingTag[0].id)
           } else {
             // 创建新标签
             const [tagResult] = await pool.execute(
               'INSERT INTO tags (name) VALUES (?)',
               [tagName]
             )
-            tagId = tagResult.insertId
+            tagId = String(tagResult.insertId)
           }
         } else {
           // 处理对象格式的标签（向后兼容）
@@ -165,13 +163,13 @@ const postsCrudConfig = {
             )
 
             if (existingTag.length > 0) {
-              tagId = existingTag[0].id
+              tagId = String(existingTag[0].id)
             } else {
               const [tagResult] = await pool.execute(
                 'INSERT INTO tags (name) VALUES (?)',
                 [tag.name]
               )
-              tagId = tagResult.insertId
+              tagId = String(tagResult.insertId)
             }
           }
         }
@@ -179,13 +177,13 @@ const postsCrudConfig = {
         // 关联笔记和标签
         await pool.execute(
           'INSERT INTO post_tags (post_id, tag_id) VALUES (?, ?)',
-          [postId, tagId]
+          [String(postId), String(tagId)]
         )
 
         // 更新标签使用次数
         await pool.execute(
           'UPDATE tags SET use_count = use_count + 1 WHERE id = ?',
-          [tagId]
+          [String(tagId)]
         )
       }
     }
@@ -213,7 +211,7 @@ const postsCrudConfig = {
     // 更新图片信息
     if (images !== undefined || image_urls !== undefined) {
       // 删除原有图片
-      await pool.execute('DELETE FROM post_images WHERE post_id = ?', [postId])
+      await pool.execute('DELETE FROM post_images WHERE post_id = ?', [String(postId)])
 
       // 使用Set来避免重复的图片URL
       const allImagesSet = new Set()
@@ -355,13 +353,13 @@ const postsCrudConfig = {
           // 关联笔记和标签
           await pool.execute(
             'INSERT INTO post_tags (post_id, tag_id) VALUES (?, ?)',
-            [postId, tagId]
+            [String(postId), String(tagId)]
           )
 
           // 更新标签使用次数
           await pool.execute(
             'UPDATE tags SET use_count = use_count + 1 WHERE id = ?',
-            [tagId]
+            [String(tagId)]
           )
         }
       }
@@ -373,12 +371,12 @@ const postsCrudConfig = {
     // 获取笔记关联的标签，减少标签使用次数
     const [tagResult] = await pool.execute(
       'SELECT tag_id FROM post_tags WHERE post_id = ?',
-      [id]
+      [String(id)]
     )
 
     // 减少标签使用次数
     for (const tag of tagResult) {
-      await pool.execute('UPDATE tags SET use_count = use_count - 1 WHERE id = ?', [tag.tag_id])
+      await pool.execute('UPDATE tags SET use_count = use_count - 1 WHERE id = ?', [String(tag.tag_id)])
     }
   },
 
@@ -389,12 +387,12 @@ const postsCrudConfig = {
     // 获取所有笔记关联的标签，减少标签使用次数
     const [tagResult] = await pool.execute(
       `SELECT tag_id FROM post_tags WHERE post_id IN (${placeholders})`,
-      ids
+      ids.map(id => String(id))
     )
 
     // 减少标签使用次数
     for (const tag of tagResult) {
-      await pool.execute('UPDATE tags SET use_count = use_count - 1 WHERE id = ?', [tag.tag_id])
+      await pool.execute('UPDATE tags SET use_count = use_count - 1 WHERE id = ?', [String(tag.tag_id)])
     }
   },
 
@@ -412,7 +410,7 @@ const postsCrudConfig = {
         FROM posts p
         LEFT JOIN users u ON p.user_id = u.id
         WHERE p.id = ?
-      `, [postId])
+      `, [String(postId)])
 
       if (postResult.length === 0) {
         return null
@@ -421,7 +419,7 @@ const postsCrudConfig = {
       const post = postResult[0]
 
       // 获取笔记图片
-      const [images] = await pool.execute('SELECT image_url FROM post_images WHERE post_id = ?', [postId])
+      const [images] = await pool.execute('SELECT image_url FROM post_images WHERE post_id = ?', [String(postId)])
       post.images = images.map(img => img.image_url)
 
       // 获取笔记标签
@@ -430,7 +428,7 @@ const postsCrudConfig = {
         FROM tags t 
         INNER JOIN post_tags pt ON t.id = pt.tag_id 
         WHERE pt.post_id = ?
-      `, [postId])
+      `, [String(postId)])
       post.tags = tags
 
       return post
@@ -460,7 +458,7 @@ const postsCrudConfig = {
         params.push(req.query.category)
       }
 
-      if (req.query.is_draft !== undefined) {
+      if (req.query.is_draft !== undefined && req.query.is_draft !== '') {
         whereClause += whereClause ? ' AND p.is_draft = ?' : ' WHERE p.is_draft = ?'
         params.push(req.query.is_draft)
       }
@@ -504,7 +502,7 @@ const postsCrudConfig = {
 
       // 为每个笔记获取图片信息和标签信息
       for (let post of posts) {
-        const [images] = await pool.execute('SELECT image_url FROM post_images WHERE post_id = ?', [post.id])
+        const [images] = await pool.execute('SELECT image_url FROM post_images WHERE post_id = ?', [String(post.id)])
         post.images = images.map(img => img.image_url)
 
         // 获取笔记标签
@@ -513,7 +511,7 @@ const postsCrudConfig = {
           FROM tags t 
           INNER JOIN post_tags pt ON t.id = pt.tag_id 
           WHERE pt.post_id = ?
-        `, [post.id])
+        `, [String(post.id)])
         post.tags = tags
       }
 
@@ -601,20 +599,20 @@ const commentsCrudConfig = {
     const { user_id, post_id, parent_id } = data
 
     // 检查用户是否存在
-    const [userResult] = await pool.execute('SELECT id FROM users WHERE id = ?', [user_id])
+    const [userResult] = await pool.execute('SELECT id FROM users WHERE id = ?', [String(user_id)])
     if (userResult.length === 0) {
       return { isValid: false, message: '用户不存在' }
     }
 
     // 检查笔记是否存在
-    const [postResult] = await pool.execute('SELECT id FROM posts WHERE id = ?', [post_id])
+    const [postResult] = await pool.execute('SELECT id FROM posts WHERE id = ?', [String(post_id)])
     if (postResult.length === 0) {
       return { isValid: false, message: '笔记不存在' }
     }
 
     // 如果是回复评论，检查父评论是否存在
     if (parent_id) {
-      const [parentResult] = await pool.execute('SELECT id FROM comments WHERE id = ?', [parent_id])
+      const [parentResult] = await pool.execute('SELECT id FROM comments WHERE id = ?', [String(parent_id)])
       if (parentResult.length === 0) {
         return { isValid: false, message: '父评论不存在' }
       }
@@ -750,7 +748,7 @@ const tagsCrudConfig = {
 // 生成标签CRUD处理器
 const tagsHandlers = createCrudHandlers(tagsCrudConfig)
 
-// 标签路由（240行代码减少到6行）
+// 标签路由
 router.post('/tags', adminAuth, tagsHandlers.create)
 router.put('/tags/:id', adminAuth, tagsHandlers.update)
 router.delete('/tags/:id', adminAuth, tagsHandlers.deleteOne)
@@ -883,7 +881,7 @@ router.get('/test-users', adminAuth, async (req, res) => {
   }
 })
 
-// 点赞路由（300行代码减少到6行）
+// 点赞路由
 router.post('/likes', adminAuth, likesHandlers.create)
 router.put('/likes/:id', adminAuth, likesHandlers.update)
 router.delete('/likes/:id', adminAuth, likesHandlers.deleteOne)
@@ -947,7 +945,7 @@ const collectionsCrudConfig = {
     const { pool } = require('../config/database')
     const [existing] = await pool.execute(
       'SELECT id FROM collections WHERE user_id = ? AND post_id = ?',
-      [data.user_id, data.post_id]
+      [String(data.user_id), String(data.post_id)]
     )
     if (existing.length > 0) {
       return {
@@ -1043,7 +1041,7 @@ const collectionsCrudConfig = {
 // 生成收藏CRUD处理器
 const collectionsHandlers = createCrudHandlers(collectionsCrudConfig)
 
-// 收藏路由（268行代码减少到6行）
+// 收藏路由
 router.post('/collections', adminAuth, collectionsHandlers.create)
 router.put('/collections/:id', adminAuth, collectionsHandlers.update)
 router.delete('/collections/:id', adminAuth, collectionsHandlers.deleteOne)
@@ -1091,7 +1089,7 @@ const followsCrudConfig = {
     const { pool } = require('../config/database')
     const [existing] = await pool.execute(
       'SELECT id FROM follows WHERE follower_id = ? AND following_id = ?',
-      [data.follower_id, data.following_id]
+      [String(data.follower_id), String(data.following_id)]
     )
     if (existing.length > 0) {
       return {
@@ -1108,7 +1106,7 @@ const followsCrudConfig = {
     if (data.following_id) {
       // 获取当前记录的关注者ID
       const { pool } = require('../config/database')
-      const [current] = await pool.execute('SELECT follower_id FROM follows WHERE id = ?', [id])
+      const [current] = await pool.execute('SELECT follower_id FROM follows WHERE id = ?', [String(id)])
       if (current.length === 0) {
         return {
           isValid: false,
@@ -1198,7 +1196,7 @@ const followsCrudConfig = {
 // 生成关注CRUD处理器
 const followsHandlers = createCrudHandlers(followsCrudConfig)
 
-// 关注路由（291行代码减少到6行）
+// 关注路由
 router.post('/follows', adminAuth, followsHandlers.create)
 router.put('/follows/:id', adminAuth, followsHandlers.update)
 router.delete('/follows/:id', adminAuth, followsHandlers.deleteOne)
@@ -1380,7 +1378,7 @@ const sessionsCrudConfig = {
 
       if (req.query.user_id) {
         whereClause += whereClause ? ' AND s.user_id = ?' : 'WHERE s.user_id = ?'
-        params.push(req.query.user_id)
+        params.push(String(req.query.user_id))
       }
 
       if (req.query.is_active !== undefined) {
@@ -1500,11 +1498,11 @@ const usersCrudConfig = {
     // 如果没有提供密码，设置默认哈希密码（123456的SHA256哈希值）
     if (!data.password) {
       // 使用MySQL的SHA2函数生成默认密码的哈希值
-      const [result] = await pool.execute('SELECT SHA2(?, 256) as hashed_password', ['123456'])
+      const [result] = await pool.execute('SELECT SHA2(?, 256) as hashed_password', [String('123456')])
       data.password = result[0].hashed_password
     } else {
       // 如果提供了密码，进行哈希处理
-      const [result] = await pool.execute('SELECT SHA2(?, 256) as hashed_password', [data.password])
+      const [result] = await pool.execute('SELECT SHA2(?, 256) as hashed_password', [String(data.password)])
       data.password = result[0].hashed_password
     }
     data.avatar = data.avatar || ''
@@ -1557,152 +1555,6 @@ const adminsCrudConfig = {
 
 const adminsHandlers = createCrudHandlers(adminsCrudConfig)
 
-// 问卷问题CRUD配置
-const surveyQuestionsCrudConfig = {
-  table: 'survey_questions',
-  name: '问卷问题',
-  requiredFields: ['question_text', 'question_type', 'options', 'sort_order'],
-  updateFields: ['question_text', 'question_type', 'options', 'sort_order', 'is_required'],
-  searchFields: {
-    question_text: { operator: 'LIKE' },
-    question_type: { operator: '=' },
-    is_required: { operator: '=' }
-  },
-  allowedSortFields: ['id', 'sort_order', 'created_at'],
-  defaultOrderBy: 'sort_order ASC',
-  
-  // 创建前的自定义处理
-  beforeCreate: async (data, req) => {
-    // 确保options是JSON格式
-    if (data.options && typeof data.options === 'object') {
-      data.options = JSON.stringify(data.options);
-    }
-    // 设置默认值
-    if (data.is_required === undefined) {
-      data.is_required = 0;
-    }
-    return data;
-  },
-  
-  // 更新前的自定义处理
-  beforeUpdate: async (data, req) => {
-    // 确保options是JSON格式
-    if (data.options && typeof data.options === 'object') {
-      data.options = JSON.stringify(data.options);
-    }
-    return data;
-  }
-}
-
-const surveyQuestionsHandlers = createCrudHandlers(surveyQuestionsCrudConfig)
-
-// 问卷问题CRUD路由
-router.post('/survey-questions', authenticateToken, surveyQuestionsHandlers.create)
-router.put('/survey-questions/:id', authenticateToken, surveyQuestionsHandlers.update)
-router.delete('/survey-questions/:id', authenticateToken, surveyQuestionsHandlers.deleteOne)
-router.delete('/survey-questions', authenticateToken, surveyQuestionsHandlers.deleteMany)
-router.get('/survey-questions/:id', authenticateToken, surveyQuestionsHandlers.getOne)
-router.get('/survey-questions', authenticateToken, surveyQuestionsHandlers.getList)
-
-// 问卷回答记录管理（前端使用的/surveys接口）
-router.get('/surveys', authenticateToken, async (req, res) => {
-  try {
-    const { page = 1, limit = 20, title, status, user_id } = req.query;
-    
-    let where = '';
-    const params = [];
-    
-    
-    
-    // 如果有title参数，可能需要关联查询问卷问题
-    if (title) {
-      // 这里只是简单处理，实际可能需要根据业务需求进行调整
-      console.log('Title filter:', title);
-    }
-    
-    const responses = await getRecords('survey_questions', {
-      page: parseInt(page),
-      limit: parseInt(limit),
-      where,
-      params,
-      orderBy: 'created_at DESC'
-    });
-    
-    success(res, responses, '获取问卷回答记录成功');
-  } catch (err) {
-    handleError(err, res, '获取问卷回答记录');
-  }
-});
-
-
-// 获取管理员菜单
-const getAdminMenu = async (req, res) => {
-  try {
-    const menu = [
-      {
-        id: 'dashboard',
-        name: '仪表盘',
-        path: '/dashboard',
-        icon: 'dashboard'
-      },
-      {
-        id: 'users',
-        name: '用户管理',
-        path: '/users',
-        icon: 'users'
-      },
-      {
-        id: 'posts',
-        name: '笔记管理',
-        path: '/posts',
-        icon: 'file-text'
-      },
-      {
-        id: 'comments',
-        name: '评论管理',
-        path: '/comments',
-        icon: 'comment'
-      },
-      {
-        id: 'notifications',
-        name: '通知管理',
-        path: '/notifications',
-        icon: 'bell'
-      },
-      {
-        id: 'surveys',
-        name: '问卷管理',
-        path: '/surveys',
-        icon: 'list-alt',
-        children: [
-          {
-            id: 'survey-questions',
-            name: '问卷问题管理',
-            path: '/survey-questions'
-          },
-          {
-            id: 'survey-responses',
-            name: '问卷回答记录',
-            path: '/survey-responses'
-          }
-        ]
-      },
-      {
-        id: 'admins',
-        name: '管理员管理',
-        path: '/admins',
-        icon: 'shield'
-      }
-    ];
-    
-    success(res, menu, '获取管理员菜单成功');
-  } catch (err) {
-    handleError(err, res, '获取管理员菜单');
-  }
-}
-
-router.get('/menu', authenticateToken, getAdminMenu);
-
 // 管理员CRUD路由
 router.post('/admins', adminAuth, adminsHandlers.create)
 router.put('/admins/:id', adminAuth, adminsHandlers.update)
@@ -1710,5 +1562,102 @@ router.delete('/admins/:id', adminAuth, adminsHandlers.deleteOne)
 router.delete('/admins', adminAuth, adminsHandlers.deleteMany)
 router.get('/admins/:id', adminAuth, adminsHandlers.getOne)
 router.get('/admins', adminAuth, adminsHandlers.getList)
+
+// 监控页面API - 获取最近动态
+router.get('/monitor/activities', adminAuth, async (req, res) => {
+  try {
+    const activities = []
+
+    // 获取最近10个新注册用户
+    const [newUsers] = await pool.execute(
+      `SELECT id, user_id, nickname, avatar, created_at, 'user_register' as type
+       FROM users
+       ORDER BY created_at DESC
+       LIMIT ?`,
+      ['10']
+    )
+
+    // 获取最近10篇发布的笔记
+    const [newPosts] = await pool.execute(
+      `SELECT p.id, p.title, p.created_at, u.user_id, u.nickname, u.avatar, 'post_publish' as type
+       FROM posts p
+       LEFT JOIN users u ON p.user_id = u.id
+       WHERE p.is_draft = 0
+       ORDER BY p.created_at DESC
+       LIMIT ?`,
+      ['10']
+    )
+
+    // 获取最近10条评论
+    const [newComments] = await pool.execute(
+      `SELECT c.id, c.content, c.post_id, c.created_at, u.user_id, u.nickname, u.avatar, p.title as post_title, 'comment_publish' as type
+       FROM comments c
+       LEFT JOIN users u ON c.user_id = u.id
+       LEFT JOIN posts p ON c.post_id = p.id
+       ORDER BY c.created_at DESC
+       LIMIT ?`,
+      ['10']
+    )
+
+    // 合并所有动态
+    newUsers.forEach(user => {
+      activities.push({
+        id: `user_${user.id}`,
+        type: 'user_register',
+        user_id: user.user_id,
+        nickname: user.nickname,
+        avatar: user.avatar,
+        title: `新用户注册`,
+        content: `用户 ${user.nickname} (${user.user_id}) 注册了账号`,
+        target_id: user.id,
+        created_at: user.created_at
+      })
+    })
+
+    newPosts.forEach(post => {
+      activities.push({
+        id: `post_${post.id}`,
+        type: 'post_publish',
+        user_id: post.user_id,
+        nickname: post.nickname,
+        avatar: post.avatar,
+        title: post.title,
+        content: `${post.nickname} 发布了笔记《${post.title}》`,
+        target_id: post.id,
+        created_at: post.created_at
+      })
+    })
+
+    newComments.forEach(comment => {
+      activities.push({
+        id: `comment_${comment.id}`,
+        type: 'comment_publish',
+        user_id: comment.user_id,
+        nickname: comment.nickname,
+        avatar: comment.avatar,
+        title: comment.post_title,
+        content: `${comment.nickname} 在《${comment.post_title}》中发表了评论：${comment.content.substring(0, 50)}${comment.content.length > 50 ? '...' : ''}`,
+        target_id: comment.post_id,
+        created_at: comment.created_at
+      })
+    })
+
+    // 按时间降序排序
+    activities.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+
+    res.json({
+      code: 200,
+      message: '获取动态成功',
+      data: activities
+    })
+  } catch (error) {
+    console.error('获取监控动态失败:', error)
+    res.status(500).json({
+      code: 500,
+      message: '获取动态失败',
+      error: error.message
+    })
+  }
+})
 
 module.exports = router

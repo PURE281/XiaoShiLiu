@@ -1,15 +1,16 @@
 const mysql = require('mysql2/promise');
 const NotificationHelper = require('../utils/notificationHelper');
+const config = require('../config/config');
 const fs = require('fs');
 const path = require('path');
 
 // 数据库配置
 const dbConfig = {
-  host: 'localhost',
-  user: 'root',
-  password: 'MEVqTaP9XAzqR9!@1',
-  database: 'xiaoshiliu_community',
-  charset: 'utf8mb4'
+  host: config.database.host,
+  user: config.database.user,
+  password: config.database.password,
+  database: config.database.database,
+  charset: config.database.charset
 };
 
 // 模拟数据生成器

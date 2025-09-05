@@ -69,7 +69,7 @@ async function getPaginatedData(table, options = {}) {
     // 获取分页数据
     const offset = (page - 1) * limit;
     const dataQuery = `SELECT ${fields} FROM ${table} ${whereClause} ORDER BY ${orderBy} LIMIT ? OFFSET ?`;
-    const dataParams = [...params, limit, offset];
+    const dataParams = [...params, String(limit), String(offset)];
     
     const [data] = await pool.execute(dataQuery, dataParams);
     

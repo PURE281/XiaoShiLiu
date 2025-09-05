@@ -4,7 +4,8 @@
     <div class="table-header">
       <div class="header-left">
 
-        <div class="search-bar" v-if="searchFields.length > 0">
+        <!-- 桌面端原位渲染筛选条 -->
+        <div class="search-bar desktop-only" v-if="searchFields.length > 0">
           <div class="search-inputs">
             <!-- 下拉菜单字段 -->
             <div v-for="field in selectFields" :key="field.key" class="search-field">
@@ -28,6 +29,35 @@
           <button @click="handleSearch" class="btn btn-outline btn-sm">筛选</button>
           <button @click="clearSearch" class="btn btn-outline btn-sm">清空</button>
         </div>
+
+        <!-- 小屏：通过 Teleport 渲染到 AdminLayout 的下拉容器 -->
+        <teleport to="#mobile-filter-container" v-if="isMobile && props.searchFields.length > 0 && teleportReady">
+          <div class="mobile-search-bar">
+            <div class="mobile-search-inputs">
+              <div v-for="field in selectFields" :key="field.key" class="mobile-search-field">
+                <label class="field-label">{{ field.label || field.placeholder }}</label>
+                <DropdownSelect 
+                  :model-value="searchParams[field.key] || ''"
+                  @change="handleSelectChange(field.key, $event)"
+                  :options="field.options"
+                  :placeholder="field.placeholder"
+                  label-key="label"
+                  value-key="value"
+                  min-width="100%" />
+              </div>
+              <div v-for="field in inputFields" :key="field.key" class="mobile-search-field">
+                <label class="field-label">{{ field.label || field.placeholder }}</label>
+                <input v-model="searchParams[field.key]" :type="field.type || 'text'"
+                  :placeholder="field.placeholder" class="mobile-input" />
+              </div>
+            </div>
+            <div class="mobile-search-actions">
+              <button @click="handleSearch" class="btn btn-primary btn-block">应用筛选</button>
+              <button @click="clearSearch" class="btn btn-outline btn-block">清空条件</button>
+            </div>
+          </div>
+        </teleport>
+
       </div>
       <div class="table-actions">
         <template v-if="!batchMode">
@@ -222,6 +252,7 @@ import ImageModal from './ImageModal.vue'
 import ImageCarousel from './ImageCarousel.vue'
 import TagsModal from './TagsModal.vue'
 import PersonalityTagsModal from './PersonalityTagsModal.vue'
+import DropdownSelect from '@/components/DropdownSelect.vue'
 import apiConfig from '@/config/api.js'
 import { useConfirm } from '../composables/useConfirm'
 import messageManager from '@/utils/messageManager'
@@ -260,6 +291,50 @@ const props = defineProps({
     default: ''
   }
 })
+
+// 小屏检测
+const isMobile = ref(false)
+const teleportReady = ref(false)
+
+function setupMobileWatcher() {
+  if (typeof window === 'undefined' || !window.matchMedia) return
+  const mql = window.matchMedia('(max-width: 960px)')
+  const update = () => { isMobile.value = mql.matches }
+  update()
+  if (mql.addEventListener) {
+    mql.addEventListener('change', update)
+  } else if (mql.addListener) {
+    mql.addListener(update)
+  }
+}
+
+function checkTeleportTarget() {
+  const target = document.getElementById('mobile-filter-container')
+  teleportReady.value = !!target
+  if (!target) {
+    // 如果目标不存在，延迟检查
+    setTimeout(checkTeleportTarget, 100)
+  }
+}
+
+// 监听DOM变化，当mobile-filter-container出现或消失时更新teleportReady
+function setupTeleportWatcher() {
+  if (typeof window === 'undefined' || !window.MutationObserver) return
+  
+  const observer = new MutationObserver(() => {
+    const target = document.getElementById('mobile-filter-container')
+    teleportReady.value = !!target
+  })
+  
+  // 监听整个document的子树变化
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true
+  })
+  
+  // 返回observer以便在组件卸载时清理
+  return observer
+}
 
 // 确认弹框
 const { confirmState, handleConfirm, handleCancel, confirmDelete, showError } = useConfirm()
@@ -370,13 +445,22 @@ const handleClickOutside = (event) => {
   }
 }
 
+// 存储observer引用以便清理
+let teleportObserver = null
+
 onMounted(() => {
+  setupMobileWatcher()
+  checkTeleportTarget()
+  teleportObserver = setupTeleportWatcher()
   loadData()
   document.addEventListener('click', handleClickOutside)
 })
 
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
+  if (teleportObserver) {
+    teleportObserver.disconnect()
+  }
 })
 
 const loadData = async (targetPage = null, useCache = true) => {
@@ -504,10 +588,16 @@ const refreshData = () => {
   loadData()
 }
 
+const emit = defineEmits(['close-filter'])
+
 const handleSearch = () => {
   clearCache()
   pagination.page = 1
   loadData()
+  // 在移动端应用筛选后关闭筛选菜单
+  if (isMobile.value) {
+    emit('close-filter')
+  }
 }
 
 const clearSearch = () => {
@@ -518,6 +608,10 @@ const clearSearch = () => {
   clearCache()
   pagination.page = 1
   loadData()
+  // 在移动端清空筛选后关闭筛选菜单
+  if (isMobile.value) {
+    emit('close-filter')
+  }
 }
 
 // 下拉菜单相关方法
@@ -923,7 +1017,7 @@ const openUserProfile = async (item, fieldKey) => {
   try {
     let userDisplayId = null
 
-    // 根据点击的字段获取对应的聚包盆号
+    // 根据点击的字段获取对应的小石榴号
     if (fieldKey) {
       userDisplayId = item[fieldKey]
     } else {
@@ -941,7 +1035,7 @@ const openUserProfile = async (item, fieldKey) => {
       // 在新标签页中打开
       window.open(userProfileUrl, '_blank')
     } else {
-      console.error('无法获取用户的聚包盆号，字段:', fieldKey, '数据:', item)
+      console.error('无法获取用户的小石榴号，字段:', fieldKey, '数据:', item)
     }
   } catch (error) {
     console.error('获取用户信息失败:', error)
@@ -960,6 +1054,10 @@ const getSelectedOptionLabel = (field, value) => {
   if (!field.options || !value) return ''
   const option = field.options.find(opt => opt.value === value)
   return option ? option.label : value
+}
+
+const handleSelectChange = (field, eventData) => {
+  searchParams[field] = eventData.value
 }
 
 // 批量删除相关方法
@@ -1211,7 +1309,7 @@ const handleImageError = (event) => {
   padding: 12px 15px;
   text-align: left;
   border-bottom: 1px solid var(--border-color-primary);
-  word-wrap: break-word; 
+  word-wrap: break-word;
   word-break: break-all;
   vertical-align: top;
   white-space: normal;
@@ -1308,8 +1406,6 @@ const handleImageError = (event) => {
   background-color: var(--primary-color);
   opacity: 0.9;
 }
-
-
 
 .loading-overlay {
   position: absolute;
@@ -1447,12 +1543,7 @@ const handleImageError = (event) => {
   color: var(--primary-color);
 }
 
-.loading-text {
-  color: var(--text-color-tertiary);
-  font-style: italic;
-}
-
-/* 表格头部排序样式 */
+/* 表头排序 */
 .th-content {
   display: inline-flex;
   align-items: center;
@@ -1492,5 +1583,193 @@ const handleImageError = (event) => {
 .sort-btn.active {
   color: var(--primary-color);
   background-color: var(--bg-color-tertiary);
+}
+
+/* 移动端筛选样式 - 参考FormModal设计 */
+.mobile-search-bar {
+  padding: 20px;
+  background: var(--bg-color-primary);
+  border-radius: 8px;
+  margin: 0;
+}
+
+.mobile-search-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.mobile-search-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.field-label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 500;
+  color: var(--text-color-primary);
+  font-size: 14px;
+}
+
+.mobile-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color-primary);
+  border-radius: 4px;
+  font-size: 14px;
+  box-sizing: border-box;
+  background-color: var(--bg-color-primary);
+  color: var(--text-color-primary);
+  caret-color: var(--primary-color);
+  transition: border-color 0.2s;
+}
+
+.mobile-input:focus {
+  border-color: var(--primary-color);
+  outline: none;
+}
+
+.mobile-search-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+}
+
+.btn-block {
+  width: 100%;
+  justify-content: center;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+  text-decoration: none;
+}
+
+.btn-block:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-block.btn-primary {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.btn-block.btn-primary:hover:not(:disabled) {
+  background-color: var(--primary-color-dark);
+}
+
+.btn-block.btn-outline {
+  background-color: transparent;
+  color: var(--text-color-secondary);
+  border: 1px solid var(--border-color-primary);
+}
+
+.btn-block.btn-outline:hover:not(:disabled) {
+  background-color: var(--bg-color-secondary);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+/* 移动端下拉选择器样式优化 - 参考FormModal */
+.mobile-search-field .custom-select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color-primary);
+  border-radius: 4px;
+  background-color: var(--bg-color-primary);
+  cursor: pointer;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.mobile-search-field .custom-select:hover {
+  border-color: var(--primary-color);
+}
+
+.mobile-search-field .custom-select:focus {
+  border-color: var(--primary-color);
+  outline: none;
+}
+
+.mobile-search-field .select-options {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  right: 0;
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid var(--border-color-primary);
+  border-radius: 4px;
+  background: var(--bg-color-primary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+}
+
+.mobile-search-field .select-option {
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  color: var(--text-color-primary);
+  font-size: 14px;
+}
+
+.mobile-search-field .select-option:hover {
+  background-color: var(--bg-color-secondary);
+}
+
+.mobile-search-field .select-option.selected {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.mobile-search-field .select-value {
+  color: var(--text-color-primary);
+  font-size: 14px;
+}
+
+.mobile-search-field .select-arrow {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  transition: transform 0.2s;
+  color: var(--text-color-secondary);
+  width: 12px;
+  height: 12px;
+}
+
+.mobile-search-field .select-arrow.rotated {
+  transform: translateY(-50%) rotate(180deg);
+}
+
+/* 小屏：隐藏桌面端原位筛选条 */
+@media (max-width: 960px) {
+  .desktop-only {
+    display: none;
+  }
+  
+  .table-header {
+    justify-content: center;
+  }
+  
+  .header-left {
+    display: none;
+  }
+  
+  .table-actions {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
 }
 </style>

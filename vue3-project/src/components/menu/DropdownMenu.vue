@@ -18,7 +18,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, provide } from 'vue'
 
 const props = defineProps({
   // 弹出方向：'up' 或 'down'
@@ -57,6 +57,9 @@ onMounted(() => {
   document.addEventListener('click', handleClickOutside)
 })
 
+// 提供关闭方法给子组件
+provide('closeDropdown', closeDropdown)
+
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
 })
@@ -86,20 +89,20 @@ onUnmounted(() => {
 .dropdown-down {
   top: 100%;
   margin-top: 4px;
-  left: 0;
+  right: 0;
 }
 
 .dropdown-up {
   bottom: 100%;
   margin-bottom: 4px;
-  left: 0;
+  right: 0;
 }
 
 /* 过渡动画 */
 .dropdown-enter-active,
 .dropdown-leave-active {
   transition: all 0.2s ease;
-  transform-origin: top left;
+  transform-origin: top right;
 }
 
 .dropdown-enter-from {
@@ -115,7 +118,7 @@ onUnmounted(() => {
 /* 向上弹出的动画 */
 .dropdown-up.dropdown-enter-active,
 .dropdown-up.dropdown-leave-active {
-  transform-origin: bottom left;
+  transform-origin: bottom right;
 }
 
 .dropdown-up.dropdown-enter-from {

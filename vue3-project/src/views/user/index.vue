@@ -247,7 +247,6 @@ function goToFollowList(type) {
 function startVerification() {
   userStore.openVerificationModal()
 }
-
 // 处理关注事件
 function handleFollow(userId) {
   console.log('用户页面: 收到关注事件，用户ID:', userId)
@@ -306,33 +305,19 @@ function handleCollect(data) {
   <div class="content-container">
     <div class="user-info" v-if="userStore.isLoggedIn">
       <div class="basic-info">
-
         <img :src="userStore.userInfo?.avatar || defaultAvatar" :alt="userStore.userInfo?.nickname || '用户头像'"
           class="avatar" @click="openAvatarCropModal" @error="handleAvatarError">
         <div class="user-basic">
           <div class="user-nickname">{{ userStore.userInfo?.nickname || '用户' }}</div>
           <div class="user-content">
-            <div class="user-id text-ellipsis">聚包盆号：{{ userStore.userInfo?.user_id || '' }}</div>
+            <div class="user-id text-ellipsis">小石榴号：{{ userStore.userInfo?.user_id || '' }}</div>
             <div class="user-IP text-ellipsis">IP属地：{{ userStore.userInfo?.location || '未知' }}</div>
-            <!-- 认证图标 - 参考B站大会员样式 -->
-            <div v-if="userStore.isVerified" class="verified-badge">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="#ff6700" class="verified-icon">
-                <path
-                  d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
-              </svg>
-              <span class="verified-text">已认证</span>
-            </div>
           </div>
-
         </div>
         <div class="edit-profile-button-wrapper">
           <button class="edit-profile-btn" @click="openEditProfileModal">
             编辑资料
           </button>
-          <button v-if="!userStore.isVerified" class="verify-btn" @click="startVerification">
-            开始认证
-          </button>
-
         </div>
       </div>
       <div class="user-desc">
@@ -822,6 +807,52 @@ function handleCollect(data) {
   border-color: var(--text-color-tertiary);
 }
 
+/* ---------- 7. 通用工具类 ---------- */
+.text-ellipsis {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* ---------- 8. 媒体查询 ---------- */
+@media (min-width: 901px) {
+
+  /* 用户信息区域响应式 */
+  .user-info {
+    max-width: 650px;
+    margin: 0 auto;
+    padding: 16px 0px;
+  }
+
+  /* 内边距调整 */
+  .basic-info,
+  .user-desc,
+  .user-interactions {
+    padding: 0;
+  }
+
+  /* Tab栏响应式 */
+  .tab {
+    max-width: 700px;
+    margin: 0 auto;
+    padding-left: 0;
+  }
+
+  .fixedTab {
+    padding-left: 220px;
+  }
+
+  /* 内容区域响应式 */
+  .content-item {
+    padding-left: 0;
+  }
+
+  /* 编辑资料按钮在大屏下的位置调整 */
+  .edit-profile-button-wrapper {
+    right: 0;
+  }
+
 /* 认证按钮样式 */
 .verify-btn {
   margin-left: 12px;
@@ -908,52 +939,5 @@ function handleCollect(data) {
     margin-left: 0;
   }
 }
-
-/* ---------- 7. 通用工具类 ---------- */
-.text-ellipsis {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
-}
-
-/* ---------- 8. 媒体查询 ---------- */
-@media (min-width: 901px) {
-
-  /* 用户信息区域响应式 */
-  .user-info {
-    max-width: 650px;
-    margin: 0 auto;
-    padding: 16px 0px;
-  }
-
-  /* 内边距调整 */
-  .basic-info,
-  .user-desc,
-  .user-interactions {
-    padding: 0;
-  }
-
-  /* Tab栏响应式 */
-  .tab {
-    max-width: 700px;
-    margin: 0 auto;
-    padding-left: 0;
-  }
-
-  .fixedTab {
-    padding-left: 220px;
-  }
-
-  /* 内容区域响应式 */
-  .content-item {
-    padding-left: 0;
-  }
-
-  /* 编辑资料按钮在大屏下的位置调整 */
-  .edit-profile-button-wrapper {
-    right: 0;
-  }
-
 }
 </style>

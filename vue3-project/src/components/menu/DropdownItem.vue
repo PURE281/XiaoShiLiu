@@ -7,10 +7,17 @@
 </template>
 
 <script setup>
+import { inject } from 'vue'
+
 const emit = defineEmits(['click'])
+const closeDropdown = inject('closeDropdown', null)
 
 const handleClick = () => {
   emit('click')
+  // 点击后自动关闭下拉菜单
+  if (closeDropdown) {
+    closeDropdown()
+  }
 }
 </script>
 
@@ -19,7 +26,9 @@ const handleClick = () => {
   cursor: pointer;
   transition: background-color 0.2s ease;
   border-radius: 999px;
-  margin: 4px;
+  margin: 2px 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .dropdown-item:hover {
@@ -32,6 +41,6 @@ const handleClick = () => {
   padding: 12px 16px;
   color: var(--text-color-primary);
   font-size: 16px;
-  line-height: 1.4;
+  line-height: 1;
 }
 </style>

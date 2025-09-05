@@ -25,7 +25,7 @@ router.get('/search', optionalAuth, async (req, res) => {
        WHERE u.nickname LIKE ? OR u.user_id LIKE ? 
        ORDER BY u.created_at DESC 
        LIMIT ? OFFSET ?`,
-      [`%${keyword}%`, `%${keyword}%`, String(limit),String(offset)]
+      [`%${keyword}%`, `%${keyword}%`, limit.toString(), offset.toString()]
     );
 
     // 检查关注状态（仅在用户已登录时）
@@ -34,14 +34,14 @@ router.get('/search', optionalAuth, async (req, res) => {
         // 检查是否已关注
         const [followResult] = await pool.execute(
           'SELECT id FROM follows WHERE follower_id = ? AND following_id = ?',
-          [currentUserId, user.id]
+          [currentUserId.toString(), user.id.toString()]
         );
         user.isFollowing = followResult.length > 0;
 
         // 检查是否互相关注
         const [mutualResult] = await pool.execute(
           'SELECT id FROM follows WHERE follower_id = ? AND following_id = ?',
-          [user.id, currentUserId]
+          [user.id.toString(), currentUserId.toString()]
         );
         user.isMutual = user.isFollowing && mutualResult.length > 0;
 
@@ -189,8 +189,8 @@ router.get('/', async (req, res) => {
     const offset = (page - 1) * limit;
 
     const [rows] = await pool.execute(
-      'SELECT id, user_id, nickname, avatar, bio, location, follow_count, fans_count, like_count, created_at FROM users ORDER BY created_at DESC LIMIT ? OFFSET ?',
-      [String(limit),String(offset)]
+      `SELECT id, user_id, nickname, avatar, bio, location, follow_count, fans_count, like_count, created_at FROM users ORDER BY created_at DESC LIMIT ? OFFSET ?`,
+      [limit.toString(), offset.toString()]
     );
 
     const [countResult] = await pool.execute('SELECT COUNT(*) as total FROM users');
@@ -236,7 +236,7 @@ router.get('/:id/posts', optionalAuth, async (req, res) => {
 
     // 构建查询条件
     let whereConditions = ['p.user_id = ?', 'p.is_draft = 0'];
-    let queryParams = [userId];
+    let queryParams = [userId.toString()];
 
     if (category) {
       whereConditions.push('p.category = ?');
@@ -262,19 +262,19 @@ router.get('/:id/posts', optionalAuth, async (req, res) => {
       ${orderBy}
       LIMIT ? OFFSET ?
     `;
-    queryParams.push(String(limit),String(offset));
+    queryParams.push(limit.toString(), offset.toString());
 
     const [rows] = await pool.execute(query, queryParams);
     // 获取每个笔记的图片、标签和用户点赞收藏状态
     for (let post of rows) {
       // 获取笔记图片
-      const [images] = await pool.execute('SELECT image_url FROM post_images WHERE post_id = ?', [post.id]);
+      const [images] = await pool.execute('SELECT image_url FROM post_images WHERE post_id = ?', [post.id.toString()]);
       post.images = images.map(img => img.image_url);
 
       // 获取笔记标签
       const [tags] = await pool.execute(
         'SELECT t.id, t.name FROM tags t JOIN post_tags pt ON t.id = pt.tag_id WHERE pt.post_id = ?',
-        [post.id]
+        [post.id.toString()]
       );
       post.tags = tags;
 
@@ -282,14 +282,14 @@ router.get('/:id/posts', optionalAuth, async (req, res) => {
       if (currentUserId) {
         const [likeResult] = await pool.execute(
           'SELECT id FROM likes WHERE user_id = ? AND target_type = 1 AND target_id = ?',
-          [currentUserId, post.id]
+          [currentUserId.toString(), post.id.toString()]
         );
         post.liked = likeResult.length > 0;
 
         // 检查当前用户是否已收藏
         const [collectResult] = await pool.execute(
           'SELECT id FROM collections WHERE user_id = ? AND post_id = ?',
-          [currentUserId, post.id]
+          [currentUserId.toString(), post.id.toString()]
         );
         post.collected = collectResult.length > 0;
       } else {
@@ -348,19 +348,19 @@ router.get('/:id/collections', optionalAuth, async (req, res) => {
        WHERE c.user_id = ? AND p.is_draft = 0
        ORDER BY c.created_at DESC
        LIMIT ? OFFSET ?`,
-      [userId, String(limit),String(offset)]
+      [userId.toString(), limit.toString(), offset.toString()]
     );
 
     // 获取每个笔记的图片、标签和用户点赞收藏状态
     for (let post of rows) {
       // 获取笔记图片
-      const [images] = await pool.execute('SELECT image_url FROM post_images WHERE post_id = ?', [post.id]);
+      const [images] = await pool.execute('SELECT image_url FROM post_images WHERE post_id = ?', [post.id.toString()]);
       post.images = images.map(img => img.image_url);
 
       // 获取笔记标签
       const [tags] = await pool.execute(
         'SELECT t.id, t.name FROM tags t JOIN post_tags pt ON t.id = pt.tag_id WHERE pt.post_id = ?',
-        [post.id]
+        [post.id.toString()]
       );
       post.tags = tags;
 
@@ -368,13 +368,13 @@ router.get('/:id/collections', optionalAuth, async (req, res) => {
       if (currentUserId) {
         const [likeResult] = await pool.execute(
           'SELECT id FROM likes WHERE user_id = ? AND target_type = 1 AND target_id = ?',
-          [currentUserId, post.id]
+          [currentUserId.toString(), post.id.toString()]
         );
         post.liked = likeResult.length > 0;
 
         const [collectResult] = await pool.execute(
           'SELECT id FROM collections WHERE user_id = ? AND post_id = ?',
-          [currentUserId, post.id]
+          [currentUserId.toString(), post.id.toString()]
         );
         post.collected = collectResult.length > 0;
       } else {
@@ -385,7 +385,7 @@ router.get('/:id/collections', optionalAuth, async (req, res) => {
 
     const [countResult] = await pool.execute(
       'SELECT COUNT(*) as total FROM collections c LEFT JOIN posts p ON c.post_id = p.id WHERE c.user_id = ? AND p.is_draft = 0',
-      [userId]
+      [userId.toString()]
     );
     const total = countResult[0].total;
 
@@ -433,19 +433,19 @@ router.get('/:id/likes', optionalAuth, async (req, res) => {
        WHERE l.user_id = ? AND l.target_type = 1 AND p.is_draft = 0
        ORDER BY l.created_at DESC
        LIMIT ? OFFSET ?`,
-      [userId, String(limit),String(offset)]
+      [userId.toString(), limit.toString(), offset.toString()]
     );
 
     // 获取每个笔记的图片、标签和用户点赞收藏状态
     for (let post of rows) {
       // 获取笔记图片
-      const [images] = await pool.execute('SELECT image_url FROM post_images WHERE post_id = ?', [post.id]);
+      const [images] = await pool.execute('SELECT image_url FROM post_images WHERE post_id = ?', [post.id.toString()]);
       post.images = images.map(img => img.image_url);
 
       // 获取笔记标签
       const [tags] = await pool.execute(
         'SELECT t.id, t.name FROM tags t JOIN post_tags pt ON t.id = pt.tag_id WHERE pt.post_id = ?',
-        [post.id]
+        [post.id.toString()]
       );
       post.tags = tags;
 
@@ -453,13 +453,13 @@ router.get('/:id/likes', optionalAuth, async (req, res) => {
       if (currentUserId) {
         const [likeResult] = await pool.execute(
           'SELECT id FROM likes WHERE user_id = ? AND target_type = 1 AND target_id = ?',
-          [currentUserId, post.id]
+          [currentUserId.toString(), post.id.toString()]
         );
         post.liked = likeResult.length > 0;
 
         const [collectResult] = await pool.execute(
           'SELECT id FROM collections WHERE user_id = ? AND post_id = ?',
-          [currentUserId, post.id]
+          [currentUserId.toString(), post.id.toString()]
         );
         post.collected = collectResult.length > 0;
       } else {
@@ -470,7 +470,7 @@ router.get('/:id/likes', optionalAuth, async (req, res) => {
 
     const [countResult] = await pool.execute(
       'SELECT COUNT(*) as total FROM likes l LEFT JOIN posts p ON l.target_id = p.id WHERE l.user_id = ? AND l.target_type = 1 AND p.is_draft = 0',
-      [userId]
+      [userId.toString()]
     );
     const total = countResult[0].total;
 
@@ -515,7 +515,7 @@ router.post('/:id/follow', authenticateToken, async (req, res) => {
     // 检查是否已经关注
     const [existingFollow] = await pool.execute(
       'SELECT id FROM follows WHERE follower_id = ? AND following_id = ?',
-      [followerId, userId]
+      [followerId.toString(), userId.toString()]
     );
 
     if (existingFollow.length > 0) {
@@ -525,14 +525,14 @@ router.post('/:id/follow', authenticateToken, async (req, res) => {
     // 添加关注记录
     await pool.execute(
       'INSERT INTO follows (follower_id, following_id) VALUES (?, ?)',
-      [followerId, userId]
+      [followerId.toString(), userId.toString()]
     );
 
     // 更新关注者的关注数
-    await pool.execute('UPDATE users SET follow_count = follow_count + 1 WHERE id = ?', [followerId]);
+    await pool.execute('UPDATE users SET follow_count = follow_count + 1 WHERE id = ?', [followerId.toString()]);
 
     // 更新被关注者的粉丝数
-    await pool.execute('UPDATE users SET fans_count = fans_count + 1 WHERE id = ?', [userId]);
+    await pool.execute('UPDATE users SET fans_count = fans_count + 1 WHERE id = ?', [userId.toString()]);
 
     // 创建关注通知
     try {
@@ -566,7 +566,7 @@ router.delete('/:id/follow', authenticateToken, async (req, res) => {
     // 删除关注记录
     const [result] = await pool.execute(
       'DELETE FROM follows WHERE follower_id = ? AND following_id = ?',
-      [followerId, userId]
+      [followerId.toString(), userId.toString()]
     );
 
     if (result.affectedRows === 0) {
@@ -574,16 +574,16 @@ router.delete('/:id/follow', authenticateToken, async (req, res) => {
     }
 
     // 更新关注者的关注数
-    await pool.execute('UPDATE users SET follow_count = follow_count - 1 WHERE id = ?', [followerId]);
+    await pool.execute('UPDATE users SET follow_count = follow_count - 1 WHERE id = ?', [followerId.toString()]);
 
     // 更新被关注者的粉丝数
-    await pool.execute('UPDATE users SET fans_count = fans_count - 1 WHERE id = ?', [userId]);
+    await pool.execute('UPDATE users SET fans_count = fans_count - 1 WHERE id = ?', [userId.toString()]);
 
     // 删除相关的关注通知
     // 删除关注者发给被关注者的关注通知
     await pool.execute(
       'DELETE FROM notifications WHERE user_id = ? AND sender_id = ? AND type = ?',
-      [userId, followerId, NotificationHelper.TYPES.FOLLOW]
+      [userId.toString(), followerId.toString(), NotificationHelper.TYPES.FOLLOW.toString()]
     );
 
     console.log(`取消关注成功 - 用户ID: ${followerId}, 目标用户ID: ${userId}`);
@@ -618,14 +618,14 @@ router.get('/:id/follow-status', optionalAuth, async (req, res) => {
       // 检查关注状态
       const [followResult] = await pool.execute(
         'SELECT id FROM follows WHERE follower_id = ? AND following_id = ?',
-        [followerId, userId]
+        [followerId.toString(), userId.toString()]
       );
       isFollowing = followResult.length > 0;
 
       // 检查是否互相关注
       const [mutualResult] = await pool.execute(
         'SELECT id FROM follows WHERE follower_id = ? AND following_id = ?',
-        [userId, followerId]
+        [userId.toString(), followerId.toString()]
       );
       isMutual = isFollowing && mutualResult.length > 0;
 
@@ -683,7 +683,7 @@ router.get('/:id/following', optionalAuth, async (req, res) => {
        WHERE f.follower_id = ?
        ORDER BY f.created_at DESC
        LIMIT ? OFFSET ?`,
-      [userId, String(limit),String(offset)]
+      [userId.toString(), limit.toString(), offset.toString()]
     );
 
     // 检查当前用户与这些用户的关注状态
@@ -692,14 +692,14 @@ router.get('/:id/following', optionalAuth, async (req, res) => {
         // 检查是否已关注
         const [followResult] = await pool.execute(
           'SELECT id FROM follows WHERE follower_id = ? AND following_id = ?',
-          [currentUserId, user.id]
+          [currentUserId.toString(), user.id.toString()]
         );
         user.isFollowing = followResult.length > 0;
 
         // 检查是否互相关注
         const [mutualResult] = await pool.execute(
           'SELECT id FROM follows WHERE follower_id = ? AND following_id = ?',
-          [user.id, currentUserId]
+          [user.id.toString(), currentUserId.toString()]
         );
         user.isMutual = user.isFollowing && mutualResult.length > 0;
 
@@ -728,7 +728,7 @@ router.get('/:id/following', optionalAuth, async (req, res) => {
     const [countResult] = await pool.execute(
       `SELECT COUNT(*) as total FROM follows f
        WHERE f.follower_id = ?`,
-      [userId]
+      [userId.toString()]
     );
     const total = countResult[0].total;
 
@@ -777,7 +777,7 @@ router.get('/:id/followers', optionalAuth, async (req, res) => {
        WHERE f.following_id = ?
        ORDER BY f.created_at DESC
        LIMIT ? OFFSET ?`,
-      [userId, String(limit),String(offset)]
+      [userId.toString(), limit.toString(), offset.toString()]
     );
 
     // 检查当前用户与这些用户的关注状态
@@ -786,14 +786,14 @@ router.get('/:id/followers', optionalAuth, async (req, res) => {
         // 检查是否已关注
         const [followResult] = await pool.execute(
           'SELECT id FROM follows WHERE follower_id = ? AND following_id = ?',
-          [currentUserId, user.id]
+          [currentUserId.toString(), user.id.toString()]
         );
         user.isFollowing = followResult.length > 0;
 
         // 检查是否互相关注
         const [mutualResult] = await pool.execute(
           'SELECT id FROM follows WHERE follower_id = ? AND following_id = ?',
-          [user.id, currentUserId]
+          [user.id.toString(), currentUserId.toString()]
         );
         user.isMutual = user.isFollowing && mutualResult.length > 0;
 
@@ -818,7 +818,7 @@ router.get('/:id/followers', optionalAuth, async (req, res) => {
       }
     }
 
-    const [countResult] = await pool.execute('SELECT COUNT(*) as total FROM follows WHERE following_id = ?', [userId]);
+    const [countResult] = await pool.execute('SELECT COUNT(*) as total FROM follows WHERE following_id = ?', [userId.toString()]);
     const total = countResult[0].total;
 
     res.json({
@@ -874,7 +874,7 @@ router.get('/:id/mutual-follows', optionalAuth, async (req, res) => {
        )
        ORDER BY u.created_at DESC
        LIMIT ? OFFSET ?`,
-      [userId, userId, String(limit),String(offset)]
+      [userId.toString(), userId.toString(), limit.toString(), offset.toString()]
     );
 
     // 检查当前用户与这些用户的关注状态
@@ -883,14 +883,14 @@ router.get('/:id/mutual-follows', optionalAuth, async (req, res) => {
         // 检查是否已关注
         const [followResult] = await pool.execute(
           'SELECT id FROM follows WHERE follower_id = ? AND following_id = ?',
-          [currentUserId, user.id]
+          [currentUserId.toString(), user.id.toString()]
         );
         user.isFollowing = followResult.length > 0;
 
         // 检查是否互相关注
         const [mutualResult] = await pool.execute(
           'SELECT id FROM follows WHERE follower_id = ? AND following_id = ?',
-          [user.id, currentUserId]
+          [user.id.toString(), currentUserId.toString()]
         );
         user.isMutual = user.isFollowing && mutualResult.length > 0;
 
@@ -955,7 +955,7 @@ router.get('/:id/mutual-follows', optionalAuth, async (req, res) => {
 router.get('/:id/stats', async (req, res) => {
   try {
     const userIdParam = req.params.id;
-    // console.log(`获取用户统计信息 - 用户ID: ${userIdParam}`);
+    console.log(`获取用户统计信息 - 用户ID: ${userIdParam}`);
 
     // 通过小石榴号查找对应的数字ID
     const [userRows] = await pool.execute('SELECT id FROM users WHERE user_id = ?', [userIdParam]);
@@ -967,7 +967,7 @@ router.get('/:id/stats', async (req, res) => {
     // 获取用户基本统计信息
     const [userStats] = await pool.execute(
       'SELECT follow_count, fans_count, like_count FROM users WHERE id = ?',
-      [userId]
+      [userId.toString()]
     );
 
     if (userStats.length === 0) {
@@ -977,13 +977,13 @@ router.get('/:id/stats', async (req, res) => {
     // 获取笔记数量
     const [postCount] = await pool.execute(
       'SELECT COUNT(*) as count FROM posts WHERE user_id = ? AND is_draft = 0',
-      [userId]
+      [userId.toString()]
     );
 
     // 获取该用户发布的笔记被收藏的总数量
     const [collectCount] = await pool.execute(
       'SELECT COUNT(*) as count FROM collections c JOIN posts p ON c.post_id = p.id WHERE p.user_id = ? AND p.is_draft = 0',
-      [userId]
+      [userId.toString()]
     );
 
     // 计算获赞与收藏总数
@@ -1101,7 +1101,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
     // 获取更新后的用户信息
     const [updatedUser] = await pool.execute(
       'SELECT id, user_id, nickname, avatar, bio, location, gender, zodiac_sign, mbti, education, major, interests, follow_count, fans_count, like_count FROM users WHERE id = ?',
-      [targetUserId]
+      [targetUserId.toString()]
     );
 
     res.json({
@@ -1149,7 +1149,7 @@ router.put('/:id/password', authenticateToken, async (req, res) => {
     // 验证当前密码（使用SHA2哈希比较）
     const [passwordRows] = await pool.execute(
       'SELECT password FROM users WHERE id = ? AND password = SHA2(?, 256)',
-      [targetUserId, currentPassword]
+      [targetUserId.toString(), currentPassword]
     );
 
     if (passwordRows.length === 0) {
@@ -1159,7 +1159,7 @@ router.put('/:id/password', authenticateToken, async (req, res) => {
     // 更新密码（使用SHA2哈希加密）
     await pool.execute(
       'UPDATE users SET password = SHA2(?, 256) WHERE id = ?',
-      [newPassword, targetUserId]
+      [newPassword, targetUserId.toString()]
     );
 
     res.json({

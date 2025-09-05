@@ -18,6 +18,7 @@ import { getValidChannelPaths } from '@/config/channels'
 import AdminLogin from '@/views/admin/AdminLogin.vue'
 import AdminLayout from '@/views/admin/AdminLayout.vue'
 import ApiDocs from '@/views/admin/ApiDocs.vue'
+import AdminMonitor from '@/views/admin/AdminMonitor.vue'
 import UserManagement from '@/views/admin/UserManagement.vue'
 import PostManagement from '@/views/admin/PostManagement.vue'
 import CommentManagement from '@/views/admin/CommentManagement.vue'
@@ -29,7 +30,6 @@ import NotificationManagement from '@/views/admin/NotificationManagement.vue'
 import SessionManagement from '@/views/admin/SessionManagement.vue'
 import AdminManagement from '@/views/admin/AdminManagement.vue'
 import SurveyManagement from '@/views/admin/SurveyManagement.vue'
-import QuestionManagement from '@/views/admin/QuestionManagement.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -185,6 +185,11 @@ const router = createRouter({
           component: ApiDocs
         },
         {
+          path: 'monitor',
+          name: 'admin_monitor',
+          component: AdminMonitor
+        },
+        {
           path: 'users',
           name: 'admin_users',
           component: UserManagement
@@ -229,9 +234,11 @@ const router = createRouter({
           name: 'admin_sessions',
           component: SessionManagement
         },
-        {          path: 'admins',          name: 'admin_admins',          component: AdminManagement        },
-        {          path: 'surveys',          name: 'admin_surveys',          component: SurveyManagement        },
-        {          path: 'survey-questions',          name: 'admin_survey_questions',          component: QuestionManagement        }
+        {
+          path: 'admins',
+          name: 'admin_admins',
+          component: AdminManagement
+        }
       ]
     }
   ],

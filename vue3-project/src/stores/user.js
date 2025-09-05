@@ -63,9 +63,9 @@ export const useUserStore = defineStore('user', () => {
       const response = await authApi.register(userData)
 
       if (response.success) {
-        // 注册成功后自动登录
-        token.value = response.data.tokens.access_token
-        refreshToken.value = response.data.tokens.refresh_token
+        // 保存到localStorage
+        localStorage.setItem('token', response.data.tokens.access_token)
+        localStorage.setItem('refreshToken', response.data.tokens.refresh_token)
         userInfo.value = response.data.user
 
         // 保存到localStorage

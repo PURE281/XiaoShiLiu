@@ -22,6 +22,7 @@
             <span v-if="showErrors && errors.user_id" class="error-message">{{ errors.user_id }}</span>
           </div>
 
+
           <div v-if="!isLoginMode" class="form-group">
             <label for="nickname" class="form-label">昵称</label>
             <input type="text" id="nickname" v-model="formData.nickname" class="form-input"
@@ -265,10 +266,7 @@ const handleSubmit = async () => {
       setTimeout(() => {
         emit('success')
         closeModal()
-        // 注册成功不刷新页面，让认证模态框正常显示
-        if (isLoginMode.value) {
-          window.location.reload()
-        }
+        window.location.reload()
       }, 1000)
     } else {
       unifiedMessage.value = result.message

@@ -23,29 +23,29 @@ router.post('/', authenticateToken, async (req, res) => {
     // 检查是否已经点赞
     const [existingLike] = await pool.execute(
       'SELECT id FROM likes WHERE user_id = ? AND target_type = ? AND target_id = ?',
-      [userId, target_type, target_id]
+      [String(userId), String(target_type), String(target_id)]
     );
 
     if (existingLike.length > 0) {
       // 已点赞，执行取消点赞
       await pool.execute(
         'DELETE FROM likes WHERE user_id = ? AND target_type = ? AND target_id = ?',
-        [userId, target_type, target_id]
+        [String(userId), String(target_type), String(target_id)]
       );
 
       // 更新对应表的点赞数
       if (target_type == 1) {
         // 笔记
-        await pool.execute('UPDATE posts SET like_count = like_count - 1 WHERE id = ?', [target_id]);
+        await pool.execute('UPDATE posts SET like_count = like_count - 1 WHERE id = ?', [String(target_id)]);
 
         // 更新笔记作者的获赞数
         await pool.execute(
           'UPDATE users SET like_count = like_count - 1 WHERE id = (SELECT user_id FROM posts WHERE id = ?)',
-          [target_id]
+          [String(target_id)]
         );
       } else if (target_type == 2) {
         // 评论
-        await pool.execute('UPDATE comments SET like_count = like_count - 1 WHERE id = ?', [target_id]);
+        await pool.execute('UPDATE comments SET like_count = like_count - 1 WHERE id = ?', [String(target_id)]);
       }
 
       console.log(`取消点赞成功 - 用户ID: ${userId}`);
@@ -54,7 +54,7 @@ router.post('/', authenticateToken, async (req, res) => {
       // 未点赞，执行点赞
       await pool.execute(
         'INSERT INTO likes (user_id, target_type, target_id) VALUES (?, ?, ?)',
-        [userId, target_type, target_id]
+        [String(userId), String(target_type), String(target_id)]
       );
 
       // 更新对应表的点赞数
@@ -63,16 +63,16 @@ router.post('/', authenticateToken, async (req, res) => {
 
       if (target_type == 1) {
         // 笔记
-        await pool.execute('UPDATE posts SET like_count = like_count + 1 WHERE id = ?', [target_id]);
+        await pool.execute('UPDATE posts SET like_count = like_count + 1 WHERE id = ?', [String(target_id)]);
 
         // 更新笔记作者的获赞数
         await pool.execute(
           'UPDATE users SET like_count = like_count + 1 WHERE id = (SELECT user_id FROM posts WHERE id = ?)',
-          [target_id]
+          [String(target_id)]
         );
 
         // 获取笔记作者ID，用于创建通知
-        const [postResult] = await pool.execute('SELECT user_id FROM posts WHERE id = ?', [target_id]);
+        const [postResult] = await pool.execute('SELECT user_id FROM posts WHERE id = ?', [String(target_id)]);
         if (postResult.length > 0) {
           targetUserId = postResult[0].user_id;
         }
@@ -80,10 +80,10 @@ router.post('/', authenticateToken, async (req, res) => {
         notificationTargetId = target_id;
       } else if (target_type == 2) {
         // 评论
-        await pool.execute('UPDATE comments SET like_count = like_count + 1 WHERE id = ?', [target_id]);
+        await pool.execute('UPDATE comments SET like_count = like_count + 1 WHERE id = ?', [String(target_id)]);
 
         // 获取评论作者ID和所属笔记ID，用于创建通知
-        const [commentResult] = await pool.execute('SELECT user_id, post_id FROM comments WHERE id = ?', [target_id]);
+        const [commentResult] = await pool.execute('SELECT user_id, post_id FROM comments WHERE id = ?', [String(target_id)]);
         if (commentResult.length > 0) {
           targetUserId = commentResult[0].user_id;
           // 点赞评论时，通知的target_id应该是评论所属的笔记ID，这样点击通知可以跳转到笔记页面
@@ -131,7 +131,7 @@ router.delete('/', authenticateToken, async (req, res) => {
     // 删除点赞记录
     const [result] = await pool.execute(
       'DELETE FROM likes WHERE user_id = ? AND target_type = ? AND target_id = ?',
-      [userId, target_type, target_id]
+      [String(userId), String(target_type), String(target_id)]
     );
 
     if (result.affectedRows === 0) {
@@ -141,16 +141,16 @@ router.delete('/', authenticateToken, async (req, res) => {
     // 更新对应表的点赞数
     if (target_type == 1) {
       // 笔记
-      await pool.execute('UPDATE posts SET like_count = like_count - 1 WHERE id = ?', [target_id]);
+      await pool.execute('UPDATE posts SET like_count = like_count - 1 WHERE id = ?', [String(target_id)]);
 
       // 更新笔记作者的获赞数
       await pool.execute(
         'UPDATE users SET like_count = like_count - 1 WHERE id = (SELECT user_id FROM posts WHERE id = ?)',
-        [target_id]
+        [String(target_id)]
       );
     } else if (target_type == 2) {
       // 评论
-      await pool.execute('UPDATE comments SET like_count = like_count - 1 WHERE id = ?', [target_id]);
+      await pool.execute('UPDATE comments SET like_count = like_count - 1 WHERE id = ?', [String(target_id)]);
     }
 
     console.log(`取消点赞成功 - 用户ID: ${userId}`);

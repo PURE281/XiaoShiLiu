@@ -1,16 +1,17 @@
 //该文件用于更新数据库中来自栗次元api的图片链接
 const mysql = require('mysql2/promise');
+const config = require('../config/config');
 const fs = require('fs');
 const path = require('path');
 const https = require('https');
 
 // 数据库配置
 const dbConfig = {
-  host: 'localhost',
-  user: 'root',
-  password: '123456',
-  database: 'xiaoshiliu',
-  charset: 'utf8mb4'
+  host: config.database.host,
+  user: config.database.user,
+  password: config.database.password,
+  database: config.database.database,
+  charset: config.database.charset
 };
 
 // 图片更新器

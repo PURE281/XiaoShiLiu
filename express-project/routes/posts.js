@@ -28,7 +28,7 @@ router.get('/', optionalAuth, async (req, res) => {
         LEFT JOIN users u ON p.user_id = u.id
         WHERE p.is_draft = ? AND p.user_id = ?
       `;
-      let queryParams = [isDraft, forcedUserId];
+      let queryParams = [isDraft.toString(), forcedUserId.toString()];
       
       if (category) {
         query += ` AND p.category = ?`;
@@ -36,9 +36,10 @@ router.get('/', optionalAuth, async (req, res) => {
       }
       
       query += ` ORDER BY p.created_at DESC LIMIT ? OFFSET ?`;
-      queryParams.push(limit, offset);
+      queryParams.push(limit.toString(), offset.toString());
       
-      const [rows] = await pool.execute(query, queryParams);
+  
+    const [rows] = await pool.execute(query, queryParams);
       
       // 获取每个草稿的图片和标签
       for (let post of rows) {
@@ -61,7 +62,7 @@ router.get('/', optionalAuth, async (req, res) => {
       // 获取草稿总数
       const [countResult] = await pool.execute(
         'SELECT COUNT(*) as total FROM posts WHERE is_draft = ? AND user_id = ?' + (category ? ' AND category = ?' : ''),
-        category ? [isDraft, forcedUserId, category] : [isDraft, forcedUserId]
+        category ? [isDraft.toString(), forcedUserId.toString(), category] : [isDraft.toString(), forcedUserId.toString()]
       );
       const total = countResult[0].total;
       const pages = Math.ceil(total / limit);
@@ -87,12 +88,12 @@ router.get('/', optionalAuth, async (req, res) => {
       LEFT JOIN users u ON p.user_id = u.id
       WHERE p.is_draft = ?
     `;
-    let queryParams = [isDraft];
+    let queryParams = [isDraft.toString()];
 
     // 特殊处理推荐频道：显示浏览量前20%的笔记，但支持分页
     if (category === 'recommend') {
       // 先获取总笔记数（只计算指定状态的笔记）
-      const [totalCountResult] = await pool.execute('SELECT COUNT(*) as total FROM posts WHERE is_draft = ?', [isDraft]);
+      const [totalCountResult] = await pool.execute('SELECT COUNT(*) as total FROM posts WHERE is_draft = ?', [isDraft.toString()]);
       const totalPosts = totalCountResult[0].total;
       const topPostsCount = Math.ceil(totalPosts * 0.2); // 前20%的笔记数量
 
@@ -106,18 +107,19 @@ router.get('/', optionalAuth, async (req, res) => {
         ORDER BY p.view_count DESC
         LIMIT ? OFFSET ?
       `;
-      queryParams = [isDraft, String(topPostsCount), String(limit), String(offset)];
+      queryParams = [isDraft.toString(), topPostsCount.toString(), limit.toString(), offset.toString()];
     } else {
       let whereConditions = [];
+      let additionalParams = [];
 
       if (category) {
         whereConditions.push('p.category = ?');
-        queryParams.push(category);
+        additionalParams.push(category);
       }
 
       if (userId) {
         whereConditions.push('p.user_id = ?');
-        queryParams.push(userId);
+        additionalParams.push(userId);
       }
 
       if (whereConditions.length > 0) {
@@ -125,9 +127,11 @@ router.get('/', optionalAuth, async (req, res) => {
       }
 
       query += ` ORDER BY p.created_at DESC LIMIT ? OFFSET ?`;
-      queryParams.push(String(limit),String(offset));
+      queryParams = [isDraft.toString(), ...additionalParams, limit.toString(), offset.toString()];
     }
 
+    console.log('SQL Query:', query);
+    console.log('Query Params:', queryParams);
     const [rows] = await pool.execute(query, queryParams);
     
 
@@ -168,12 +172,12 @@ router.get('/', optionalAuth, async (req, res) => {
     let total;
     if (category === 'recommend') {
       // 推荐频道的总数就是前20%的笔记数量
-      const [totalCountResult] = await pool.execute('SELECT COUNT(*) as total FROM posts WHERE is_draft = ?', [isDraft]);
+      const [totalCountResult] = await pool.execute('SELECT COUNT(*) as total FROM posts WHERE is_draft = ?', [isDraft.toString()]);
       const totalPosts = totalCountResult[0].total;
       total = Math.ceil(totalPosts * 0.2);
     } else {
       let countQuery = 'SELECT COUNT(*) as total FROM posts WHERE is_draft = ?';
-      let countParams = [isDraft];
+      let countParams = [isDraft.toString()];
       let countWhereConditions = [];
 
       if (category) {
@@ -327,7 +331,7 @@ router.post('/', authenticateToken, async (req, res) => {
       for (const imageUrl of validUrls) {
         await pool.execute(
           'INSERT INTO post_images (post_id, image_url) VALUES (?, ?)',
-          [postId, imageUrl]
+          [postId.toString(), imageUrl]
         );
       }
     }
@@ -347,10 +351,10 @@ router.post('/', authenticateToken, async (req, res) => {
         }
 
         // 关联笔记和标签
-        await pool.execute('INSERT INTO post_tags (post_id, tag_id) VALUES (?, ?)', [postId, tagId]);
+        await pool.execute('INSERT INTO post_tags (post_id, tag_id) VALUES (?, ?)', [postId.toString(), tagId.toString()]);
 
         // 更新标签使用次数
-        await pool.execute('UPDATE tags SET use_count = use_count + 1 WHERE id = ?', [tagId]);
+        await pool.execute('UPDATE tags SET use_count = use_count + 1 WHERE id = ?', [tagId.toString()]);
       }
     }
 
@@ -390,7 +394,7 @@ router.get('/search', optionalAuth, async (req, res) => {
        WHERE p.is_draft = 0 AND (p.title LIKE ? OR p.content LIKE ?)
        ORDER BY p.created_at DESC
        LIMIT ? OFFSET ?`,
-      [`%${keyword}%`, `%${keyword}%`, String(limit),String(offset)]
+      [`%${keyword}%`, `%${keyword}%`, limit.toString(), offset.toString()]
     );
 
     // 获取每个笔记的图片、标签和用户点赞收藏状态
@@ -467,7 +471,7 @@ router.get('/:id/comments', optionalAuth, async (req, res) => {
     console.log(`获取笔记评论列表 - 笔记ID: ${postId}, 页码: ${page}, 每页: ${limit}, 当前用户ID: ${currentUserId}`);
 
     // 验证笔记是否存在
-    const [postRows] = await pool.execute('SELECT id FROM posts WHERE id = ?', [postId]);
+    const [postRows] = await pool.execute('SELECT id FROM posts WHERE id = ?', [postId.toString()]);
     if (postRows.length === 0) {
       return res.status(404).json({ code: 404, message: '笔记不存在' });
     }
@@ -480,7 +484,7 @@ router.get('/:id/comments', optionalAuth, async (req, res) => {
        WHERE c.post_id = ? AND c.parent_id IS NULL
        ORDER BY c.created_at DESC
        LIMIT ? OFFSET ?`,
-      [postId, String(limit),String(offset)]
+      [postId, limit.toString(), offset.toString()]
     );
 
     // 为每个评论检查点赞状态
@@ -547,18 +551,18 @@ router.post('/:id/collect', authenticateToken, async (req, res) => {
     // 检查是否已经收藏
     const [existingCollection] = await pool.execute(
       'SELECT id FROM collections WHERE user_id = ? AND post_id = ?',
-      [userId, postId]
+      [userId.toString(), postId.toString()]
     );
 
     if (existingCollection.length > 0) {
       // 已收藏，执行取消收藏
       await pool.execute(
         'DELETE FROM collections WHERE user_id = ? AND post_id = ?',
-        [userId, postId]
+        [userId.toString(), postId.toString()]
       );
 
       // 更新笔记收藏数
-      await pool.execute('UPDATE posts SET collect_count = collect_count - 1 WHERE id = ?', [postId]);
+      await pool.execute('UPDATE posts SET collect_count = collect_count - 1 WHERE id = ?', [postId.toString()]);
 
       console.log(`取消收藏成功 - 用户ID: ${userId}, 笔记ID: ${postId}`);
       res.json({ code: 200, message: '取消收藏成功', data: { collected: false } });
@@ -566,14 +570,14 @@ router.post('/:id/collect', authenticateToken, async (req, res) => {
       // 未收藏，执行收藏
       await pool.execute(
         'INSERT INTO collections (user_id, post_id) VALUES (?, ?)',
-        [userId, postId]
+        [userId.toString(), postId.toString()]
       );
 
       // 更新笔记收藏数
-      await pool.execute('UPDATE posts SET collect_count = collect_count + 1 WHERE id = ?', [postId]);
+      await pool.execute('UPDATE posts SET collect_count = collect_count + 1 WHERE id = ?', [postId.toString()]);
 
       // 获取笔记作者ID，用于创建通知
-      const [postResult] = await pool.execute('SELECT user_id FROM posts WHERE id = ?', [postId]);
+      const [postResult] = await pool.execute('SELECT user_id FROM posts WHERE id = ?', [postId.toString()]);
       if (postResult.length > 0) {
         const targetUserId = postResult[0].user_id;
 
@@ -608,7 +612,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
     // 检查笔记是否存在且属于当前用户
     const [postRows] = await pool.execute(
       'SELECT user_id FROM posts WHERE id = ?',
-      [postId]
+      [postId.toString()]
     );
 
     if (postRows.length === 0) {
@@ -622,11 +626,11 @@ router.put('/:id', authenticateToken, async (req, res) => {
     // 更新笔记基本信息
     await pool.execute(
       'UPDATE posts SET title = ?, content = ?, category = ?, is_draft = ? WHERE id = ?',
-      [title || '', content || '', category || null, is_draft ? 1 : 0, postId]
+      [title || '', content || '', category || null, (is_draft ? 1 : 0).toString(), postId.toString()]
     );
 
     // 删除原有图片
-    await pool.execute('DELETE FROM post_images WHERE post_id = ?', [postId]);
+    await pool.execute('DELETE FROM post_images WHERE post_id = ?', [postId.toString()]);
 
     // 处理新图片
     if (images && images.length > 0) {
@@ -663,7 +667,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
     }
 
     // 删除原有标签关联
-    await pool.execute('DELETE FROM post_tags WHERE post_id = ?', [postId]);
+    await pool.execute('DELETE FROM post_tags WHERE post_id = ?', [postId.toString()]);
 
     // 处理新标签
     if (tags && tags.length > 0) {
@@ -709,7 +713,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     // 检查笔记是否存在且属于当前用户
     const [postRows] = await pool.execute(
       'SELECT user_id FROM posts WHERE id = ?',
-      [postId]
+      [postId.toString()]
     );
 
     if (postRows.length === 0) {
@@ -723,24 +727,24 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     // 获取笔记关联的标签，减少标签使用次数
     const [tagResult] = await pool.execute(
       'SELECT tag_id FROM post_tags WHERE post_id = ?',
-      [postId]
+      [postId.toString()]
     );
 
     // 减少标签使用次数
     for (const tag of tagResult) {
-      await pool.execute('UPDATE tags SET use_count = GREATEST(use_count - 1, 0) WHERE id = ?', [tag.tag_id]);
+      await pool.execute('UPDATE tags SET use_count = GREATEST(use_count - 1, 0) WHERE id = ?', [tag.tag_id.toString()]);
     }
 
     // 删除相关数据（由于外键约束，需要按顺序删除）
-    await pool.execute('DELETE FROM post_images WHERE post_id = ?', [postId]);
-    await pool.execute('DELETE FROM post_tags WHERE post_id = ?', [postId]);
-    await pool.execute('DELETE FROM likes WHERE target_type = 1 AND target_id = ?', [postId]);
-    await pool.execute('DELETE FROM collections WHERE post_id = ?', [postId]);
-    await pool.execute('DELETE FROM comments WHERE post_id = ?', [postId]);
-    await pool.execute('DELETE FROM notifications WHERE target_id = ?', [postId]);
+    await pool.execute('DELETE FROM post_images WHERE post_id = ?', [postId.toString()]);
+    await pool.execute('DELETE FROM post_tags WHERE post_id = ?', [postId.toString()]);
+    await pool.execute('DELETE FROM likes WHERE target_type = 1 AND target_id = ?', [postId.toString()]);
+    await pool.execute('DELETE FROM collections WHERE post_id = ?', [postId.toString()]);
+    await pool.execute('DELETE FROM comments WHERE post_id = ?', [postId.toString()]);
+    await pool.execute('DELETE FROM notifications WHERE target_id = ?', [postId.toString()]);
 
     // 最后删除笔记
-    await pool.execute('DELETE FROM posts WHERE id = ?', [postId]);
+    await pool.execute('DELETE FROM posts WHERE id = ?', [postId.toString()]);
 
     console.log(`删除笔记成功 - 用户ID: ${userId}, 笔记ID: ${postId}`);
 
@@ -765,7 +769,7 @@ router.delete('/:id/collect', authenticateToken, async (req, res) => {
     // 删除收藏记录
     const [result] = await pool.execute(
       'DELETE FROM collections WHERE user_id = ? AND post_id = ?',
-      [userId, postId]
+      [userId.toString(), postId.toString()]
     );
 
     if (result.affectedRows === 0) {
@@ -773,7 +777,7 @@ router.delete('/:id/collect', authenticateToken, async (req, res) => {
     }
 
     // 更新笔记收藏数
-    await pool.execute('UPDATE posts SET collect_count = collect_count - 1 WHERE id = ?', [postId]);
+    await pool.execute('UPDATE posts SET collect_count = collect_count - 1 WHERE id = ?', [postId.toString()]);
 
     console.log(`取消收藏成功 - 用户ID: ${userId}, 笔记ID: ${postId}`);
     res.json({ code: 200, message: '取消收藏成功', data: { collected: false } });

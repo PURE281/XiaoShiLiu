@@ -2,10 +2,10 @@
 
 ## 项目信息
 - **项目名称**: 小石榴图文社区
-- **版本**: v1.0.0
+- **版本**: v1.0.2
 - **基础URL**: `http://localhost:3001`
 - **数据库**: xiaoshiliu (MySQL)
-- **更新时间**: 2025-09-03
+- **更新时间**: 2025-09-05
 
 ## 通用说明
 
@@ -1810,6 +1810,97 @@ Authorization: Bearer <your_jwt_token>
 
 ---
 
+## 标签相关接口
+
+### 1. 获取所有标签
+**接口地址**: `GET /api/tags`
+**需要认证**: 否
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": [
+    {
+      "id": 1,
+      "name": "摄影",
+      "description": "摄影相关内容",
+      "use_count": 150,
+      "created_at": "2025-08-30T00:00:00.000Z"
+    }
+  ]
+}
+```
+
+### 2. 获取热门标签
+**接口地址**: `GET /api/tags/hot`
+**需要认证**: 否
+
+**请求参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| limit | int | 否 | 返回数量，默认10 |
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": [
+    {
+      "id": 1,
+      "name": "摄影",
+      "description": "摄影相关内容",
+      "use_count": 150,
+      "created_at": "2025-08-30T00:00:00.000Z"
+    }
+  ]
+}
+```
+
+---
+
+## 统计相关接口
+
+### 1. 获取系统统计信息
+**接口地址**: `GET /api/stats`
+**需要认证**: 否
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "获取统计信息成功",
+  "data": {
+    "users": 1250,
+    "posts": 3420,
+    "comments": 8750,
+    "likes": 15600
+  }
+}
+```
+
+---
+
+## 健康检查接口
+
+### 1. 健康检查
+**接口地址**: `GET /api/health`
+**需要认证**: 否
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "OK",
+  "timestamp": "2025-01-15T10:30:00.000Z",
+  "uptime": 3600.5
+}
+```
+
+---
+
 ## 搜索相关接口
 
 ### 1. 通用搜索
@@ -2624,6 +2715,46 @@ async function example() {
 #### 12.7 修改管理员状态
 **接口地址**: `PUT /api/auth/admin/admins/:id/status`
 **需要认证**: 是（JWT）
+
+### 13. 监控管理
+
+#### 13.1 获取系统活动监控
+**接口地址**: `GET /api/admin/monitor/activities`
+**需要认证**: 是
+
+**请求参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| page | int | 否 | 页码，默认1 |
+| limit | int | 否 | 每页数量，默认20 |
+| date_from | string | 否 | 开始日期（YYYY-MM-DD） |
+| date_to | string | 否 | 结束日期（YYYY-MM-DD） |
+| activity_type | string | 否 | 活动类型筛选 |
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "activities": [
+      {
+        "date": "2025-01-15",
+        "new_users": 25,
+        "new_posts": 120,
+        "new_comments": 350,
+        "new_likes": 890
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 20,
+      "total": 30,
+      "pages": 2
+    }
+  }
+}
+```
 
 ### 管理员接口使用示例
 

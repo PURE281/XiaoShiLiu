@@ -25,58 +25,93 @@
           <div v-if="!isCollapsed || isExpanded" class="admin-theme-switcher">
             <div class="theme-switcher-content">
               <div class="theme-toggle-container">
-                <div class="theme-toggle-track">
 
-                  <div class="theme-toggle-indicator" :style="{ transform: `translateX(${indicatorPosition}px)` }">
-                  </div>
+                <div class="theme-toggle-indicator" :style="{ transform: `translateX(${indicatorPosition}px)` }">
+                </div>
 
 
-                  <div v-for="(option, index) in themeStore.themeOptions" :key="option.value"
-                    class="theme-option-wrapper">
-                    <button class="theme-toggle-option" :class="{ 'active': themeStore.currentTheme === option.value }"
-                      @click="themeStore.setTheme(option.value)" :title="option.label">
-                      <SvgIcon :name="option.icon" width="12" height="12" />
-                    </button>
-                    <div class="tooltip">{{ option.label }}</div>
-                  </div>
+                <div v-for="(option, index) in themeStore.themeOptions" :key="option.value"
+                  class="theme-option-wrapper">
+                  <button class="theme-toggle-option" :class="{ 'active': themeStore.currentTheme === option.value }"
+                    @click="themeStore.setTheme(option.value)" :title="option.label">
+                    <SvgIcon :name="option.icon" width="12" height="12" />
+                  </button>
+                  <div class="tooltip">{{ option.label }}</div>
                 </div>
               </div>
             </div>
           </div>
-
-          <button class="logout-btn" @click="handleLogout" title="退出登录">
-            <SvgIcon name="leftArrow" />
-            <span class="logout-text">退出登录</span>
-          </button>
         </div>
-      </div>
 
-
-      <div class="main-content">
-        <div class="content-header">
-          <div class="header-left">
-            <h1>{{ currentPageTitle }}</h1>
-            <p class="page-description">{{ currentPageDescription }}</p>
-          </div>
-          <div class="header-right">
-            <button class="back-btn" @click="goBack">
-              <SvgIcon name="home" />
-              返回主站
-            </button>
-          </div>
-        </div>
-        <div class="content-body">
-          <router-view />
-        </div>
+        <button class="logout-btn" @click="handleLogout" title="退出登录">
+          <SvgIcon name="leftArrow" />
+          <span class="logout-text">退出登录</span>
+        </button>
       </div>
     </template>
 
+    <div class="main-content">
+      <!-- 中小屏头部：替代侧边栏，放在主内容顶部，确保可见 -->
+      <div class="content-header">
+        <div class="header-left">
+          <h1>{{ currentPageTitle }}</h1>
+          <p class="page-description">{{ currentPageDescription }}</p>
+        </div>
+        <div class="header-right">
+          <!-- 桌面端直接显示筛选区域 -->
+          <div v-if="shouldShowFilter" class="filters-desktop desktop-only">
+            <slot name="filters" />
+          </div>
+
+          <button class="back-btn" @click="goBack">
+            <SvgIcon name="home" />
+            <span class="back-text">返回主站</span>
+          </button>
+
+          <!-- 小屏筛选按钮（下拉） -->
+          <div v-if="shouldShowFilter" class="filters mobile-only">
+            <button class="filter-btn" @click="isFilterOpen = !isFilterOpen" aria-label="筛选"
+              :class="{ active: isFilterOpen }">
+              <SvgIcon name="filter" width="18" height="18" />
+            </button>
+            <div v-if="isFilterOpen" class="filter-menu" @click.self="isFilterOpen = false">
+              <div class="filter-menu-content">
+                <div class="filter-menu-header">
+                  <h3>筛选条件</h3>
+                  <div @click="isFilterOpen = false" class="filter-close-btn">
+                    <SvgIcon name="close" width="18" height="18" />
+                  </div>
+                </div>
+                <div id="mobile-filter-container"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 小屏菜单按钮（代替侧边栏） -->
+          <DropdownMenu class="mobile-only" direction="down">
+            <template #trigger>
+              <button class="mobile-menu-btn" aria-label="打开菜单">
+                <SvgIcon name="menu" width="20" height="20" />
+              </button>
+            </template>
+            <template #menu>
+              <DropdownItem v-for="item in menuItems" :key="item.path" @click="() => $router.push(item.path)">
+                <SvgIcon :name="item.icon" class="mobile-menu-icon" />
+                <span class="mobile-menu-text">{{ item.title }}</span>
+              </DropdownItem>
+            </template>
+          </DropdownMenu>
+        </div>
+      </div>
+      <div class="content-body">
+        <router-view @close-filter="isFilterOpen = false" />
+      </div>
+    </div>
 
     <div v-if="isLoading" class="loading-overlay">
       <div class="loading-spinner"></div>
       <p>正在验证登录状态...</p>
     </div>
-
 
     <ConfirmDialog v-model:visible="confirmState.visible" :title="confirmState.title" :message="confirmState.message"
       :type="confirmState.type" :confirm-text="confirmState.confirmText" :cancel-text="confirmState.cancelText"
@@ -85,65 +120,76 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import SvgIcon from '@/components/SvgIcon.vue'
 import ConfirmDialog from '../../components/ConfirmDialog.vue'
+import DropdownItem from '@/components/menu/DropdownItem.vue'
+import DropdownMenu from '@/components/menu/DropdownMenu.vue'
 import { useAdminStore } from '@/stores/admin'
 import { useThemeStore } from '@/stores/theme'
 import { useConfirm } from './composables/useConfirm'
+import { useScrollLock } from '@/composables/useScrollLock'
 
 const route = useRoute()
 const router = useRouter()
 const adminStore = useAdminStore()
 const themeStore = useThemeStore()
+const { confirmState, handleConfirm, handleCancel, confirmLogout } = useConfirm()
+const { lock, unlock } = useScrollLock()
 
-// 静态资源URL
 const logoUrl = new URL('@/assets/imgs/logo.ico', import.meta.url).href
 
-// 确认弹框
-const { confirmState, handleConfirm, handleCancel, confirmLogout } = useConfirm()
-
-// 计算指示器位置
 const indicatorPosition = computed(() => {
   const index = themeStore.themeOptions.findIndex(option => option.value === themeStore.currentTheme)
-  return index * 24 // 后台管理中按钮尺寸较小，使用24px
+  return index * 24
 })
 
-// 侧边栏状态
-const isCollapsed = ref(true) // 默认收起
-const isExpanded = ref(false) // 鼠标悬停时展开
+const isCollapsed = ref(true)
+const isExpanded = ref(false)
 
-// 登录状态
 const isLoading = ref(true)
 const isLoggedIn = computed(() => adminStore.isLoggedIn)
-const localLoginSuccess = ref(false) // 本地登录成功标记
+const localLoginSuccess = ref(false)
 
-// 组件挂载时检查登录状态
+const isMobile = ref(false)
+const isFilterOpen = ref(false)
+
+// 判断当前页面是否需要显示筛选按钮
+const shouldShowFilter = computed(() => {
+  const noFilterRoutes = ['/admin/api-docs', '/admin/monitor']
+  return !noFilterRoutes.includes(route.path)
+})
+
+function setupMobileWatcher() {
+  if (typeof window === 'undefined' || !window.matchMedia) return
+  const mql = window.matchMedia('(max-width: 960px)')
+  const update = () => { isMobile.value = mql.matches }
+  update()
+  if (mql.addEventListener) {
+    mql.addEventListener('change', update)
+  } else if (mql.addListener) {
+    mql.addListener(update)
+  }
+}
+
 onMounted(async () => {
   try {
-    // 初始化管理员信息
     adminStore.initializeAdmin()
-
-    // 检查是否已登录
     if (!adminStore.isLoggedIn) {
-      // 重定向到登录页面
       router.push('/admin/login')
       return
     }
-
-    // 验证token有效性
     const isValid = await adminStore.checkTokenValidity()
     if (!isValid) {
       showMessage('登录已过期，请重新登录', 'error')
-      // 重定向到登录页面
       router.push('/admin/login')
     } else {
       localLoginSuccess.value = true
     }
+    setupMobileWatcher()
   } catch (error) {
     console.error('初始化失败:', error)
-    // 重定向到登录页面
     router.push('/admin/login')
   } finally {
     isLoading.value = false
@@ -200,9 +246,19 @@ const showMessage = (message, type = 'success') => {
   }, 3000)
 }
 
+// 监听筛选菜单状态变化，控制滚动锁定
+watch(isFilterOpen, (newValue) => {
+  if (newValue) {
+    lock()
+  } else {
+    unlock()
+  }
+})
+
 // 菜单项
 const menuItems = [
   { path: '/admin/api-docs', title: 'API文档', icon: 'data' },
+  { path: '/admin/monitor', title: '动态监控', icon: 'monitor' },
   { path: '/admin/users', title: '用户管理', icon: 'user' },
   { path: '/admin/posts', title: '笔记管理', icon: 'note' },
   { path: '/admin/comments', title: '评论管理', icon: 'chat' },
@@ -212,8 +268,6 @@ const menuItems = [
   { path: '/admin/follows', title: '关注管理', icon: 'follow' },
   { path: '/admin/notifications', title: '通知管理', icon: 'notification' },
   { path: '/admin/sessions', title: '会话管理', icon: 'setting' },
-  { path: '/admin/surveys', title: '问卷管理', icon: 'publish' },
-  { path: '/admin/survey-questions', title: '问卷问题管理', icon: 'survey' },
   { path: '/admin/admins', title: '管理员管理', icon: 'user' }
 ]
 
@@ -227,6 +281,7 @@ const currentPageTitle = computed(() => {
 const currentPageDescription = computed(() => {
   const descriptions = {
     '/admin/api-docs': '查看和测试API接口文档',
+    '/admin/monitor': '查看系统最近动态和活动监控',
     '/admin/users': '管理用户账户和权限',
     '/admin/posts': '管理用户发布的笔记内容',
     '/admin/comments': '管理用户评论和回复',
@@ -236,8 +291,6 @@ const currentPageDescription = computed(() => {
     '/admin/follows': '管理用户关注关系',
     '/admin/notifications': '管理系统通知消息',
     '/admin/sessions': '管理用户登录会话',
-    '/admin/surveys': '问卷管理',
-    '/admin/survey-questions': '管理问卷问题和选项',
     '/admin/admins': '管理系统管理员账号'
   }
   return descriptions[route.path]
@@ -839,5 +892,240 @@ const goBack = () => {
   color: var(--text-color-secondary);
   font-size: 14px;
   margin: 0;
+}
+
+
+/* content-header 在小屏也显示 */
+/* 原来隐藏 content-header 的规则已移除 */
+
+/* header 内小屏品牌区域样式 */
+.header-brand {
+  display: none;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 默认仅桌面显示的元素 */
+.desktop-only {
+  display: block;
+}
+
+.mobile-only {
+  display: none;
+}
+
+/* 小屏规则（合并） */
+@media (max-width: 960px) {
+  .sidebar {
+    display: none;
+  }
+
+  .header-brand {
+    display: flex;
+  }
+
+  .desktop-only {
+    display: none;
+  }
+
+  .mobile-only {
+    display: inline-flex;
+  }
+
+  .back-btn .back-text {
+    display: none;
+  }
+
+  .header-right .back-btn,
+  .header-right .filter-btn,
+  .header-right .mobile-menu-btn {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    margin-left: 8px;
+    border: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    background: var(--primary-color);
+    border-radius: 50%;
+  }
+
+  .header-right .back-btn svg,
+  .header-right .filter-btn svg,
+  .header-right .mobile-menu-btn svg {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+/* header 内的 mobile 菜单定位 */
+.content-header {
+  position: relative;
+}
+
+.content-header .mobile-menu {
+  position: absolute;
+  top: 56px;
+  right: 32px;
+}
+
+/* 默认隐藏移动头部（仅小屏显示） */
+.mobile-header {
+  display: none;
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  height: 56px;
+  padding: 0 12px;
+  background: var(--bg-color-primary);
+  border-bottom: 1px solid var(--border-color-primary);
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mobile-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mobile-logo {
+  width: 28px;
+  height: 28px;
+}
+
+.mobile-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-color-primary);
+}
+
+.mobile-header-right {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.mobile-menu-btn {
+  border: none;
+  background: transparent;
+  padding: 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--text-color-primary);
+}
+
+.mobile-menu-icon {
+  width: 18px;
+  height: 18px;
+  margin-right: 10px;
+  color: var(--text-color-tertiary);
+}
+
+.mobile-menu-text {
+  font-size: 14px;
+}
+
+
+.filters {
+  position: relative;
+}
+
+
+.filter-menu {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-end;
+  height: 100vh;
+  height: 100dvh; 
+}
+
+.filter-menu-content {
+  background: var(--bg-color-primary);
+  border-radius: 12px 12px 0 0;
+  width: 100%;
+  max-height: 70vh;
+  max-height: 70dvh; 
+  overflow-y: auto;
+  animation: slideUp 0.3s ease-out;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+  min-height: 200px;
+}
+
+.filter-menu-content::-webkit-scrollbar {
+  width: 4px;
+}
+
+.filter-menu-content::-webkit-scrollbar-track {
+  background: var(--bg-color-secondary);
+}
+
+.filter-menu-content::-webkit-scrollbar-thumb {
+  background: var(--border-color-primary);
+  border-radius: 2px;
+}
+
+.filter-menu-content::-webkit-scrollbar-thumb:hover {
+  background: var(--text-color-quaternary);
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+
+  to {
+    transform: translateY(0);
+  }
+}
+
+.filter-menu-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-color-primary);
+}
+
+.filter-menu-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-color-primary);
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  color: var(--text-color-secondary);
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.close-btn:hover {
+  background: var(--bg-color-secondary);
+  color: var(--text-color-primary);
+}
+
+.filter-btn.active {
+  background: var(--primary-color) !important;
+  color: white !important;
+}
+
+.filters-desktop {
+  margin-right: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 </style>

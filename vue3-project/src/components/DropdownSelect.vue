@@ -230,32 +230,34 @@ onUnmounted(() => {
 .dropdown-option {
   display: flex;
   align-items: center;
-  padding: 12px;
+  padding: 12px 16px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease;
   position: relative;
-  border-radius: 6px;
-  margin-bottom: 4px;
+  border-radius: 999px;
+  margin: 2px 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .dropdown-option:last-child {
-  margin-bottom: 0;
+  margin-bottom: 4px;
 }
 
 .dropdown-option:hover {
   background: var(--bg-color-secondary);
-  border-radius: 6px;
 }
 
 .dropdown-option.selected {
   background: rgba(255, 71, 87, 0.1);
   color: #ff4757;
   font-weight: 500;
-  border-radius: 6px;
 }
 
 .option-text {
-  font-size: 14px;
+  color: var(--text-color-primary);
+  font-size: 16px;
+  line-height: 1.4;
 }
 
 /* 滚动条样式 */

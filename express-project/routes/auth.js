@@ -33,7 +33,7 @@ router.post('/register', async (req, res) => {
     // 检查用户ID是否已存在
     const [existingUser] = await pool.execute(
       'SELECT id FROM users WHERE user_id = ?',
-      [user_id]
+      [user_id.toString()]
     );
 
     if (existingUser.length > 0) {
@@ -68,13 +68,13 @@ router.post('/register', async (req, res) => {
     // 保存会话
     await pool.execute(
       'INSERT INTO user_sessions (user_id, token, refresh_token, expires_at, user_agent, is_active) VALUES (?, ?, ?, DATE_ADD(NOW(), INTERVAL 7 DAY), ?, 1)',
-      [userId, accessToken, refreshToken, userAgent]
+      [userId.toString(), accessToken, refreshToken, userAgent]
     );
 
     // 获取完整用户信息
     const [userRows] = await pool.execute(
       'SELECT id, user_id, nickname, avatar, bio, location, follow_count, fans_count, like_count FROM users WHERE id = ?',
-      [userId]
+      [userId.toString()]
     );
 
     console.log(`用户注册成功 - 用户ID: ${userId}, 小石榴号: ${userRows[0].user_id}`);
@@ -108,7 +108,7 @@ router.post('/login', async (req, res) => {
     // 查找用户
     const [userRows] = await pool.execute(
       'SELECT id, user_id, nickname, password, avatar, bio, location, follow_count, fans_count, like_count, is_active, gender, zodiac_sign, mbti, education, major, interests FROM users WHERE user_id = ?',
-      [user_id]
+      [user_id.toString()]
     );
 
     if (userRows.length === 0) {
@@ -124,7 +124,7 @@ router.post('/login', async (req, res) => {
     // 验证密码（哈希比较）
     const [passwordCheck] = await pool.execute(
       'SELECT 1 FROM users WHERE id = ? AND password = SHA2(?, 256)',
-      [user.id, password]
+      [user.id.toString(), password]
     );
     
     if (passwordCheck.length === 0) {
@@ -143,14 +143,14 @@ router.post('/login', async (req, res) => {
     const ipLocation = await getIPLocation(userIP);
     await pool.execute(
       'UPDATE users SET location = ? WHERE id = ?',
-      [ipLocation, user.id]
+      [ipLocation, user.id.toString()]
     );
 
     // 清除旧会话并保存新会话
-    await pool.execute('UPDATE user_sessions SET is_active = 0 WHERE user_id = ?', [user.id]);
+    await pool.execute('UPDATE user_sessions SET is_active = 0 WHERE user_id = ?', [user.id.toString()]);
     await pool.execute(
       'INSERT INTO user_sessions (user_id, token, refresh_token, expires_at, user_agent, is_active) VALUES (?, ?, ?, DATE_ADD(NOW(), INTERVAL 7 DAY), ?, 1)',
-      [user.id, accessToken, refreshToken, userAgent]
+      [user.id.toString(), accessToken, refreshToken, userAgent]
     );
 
     // 更新用户对象中的location字段
@@ -170,7 +170,7 @@ router.post('/login', async (req, res) => {
       }
     }
 
-    // console.log(`用户登录成功 - 用户ID: ${user.id}, 小石榴号: ${user.user_id}`);
+    console.log(`用户登录成功 - 用户ID: ${user.id}, 小石榴号: ${user.user_id}`);
 
     res.json({
       code: 200,
@@ -205,7 +205,7 @@ router.post('/refresh', async (req, res) => {
     // 检查会话是否有效
     const [sessionRows] = await pool.execute(
       'SELECT id FROM user_sessions WHERE user_id = ? AND refresh_token = ? AND is_active = 1 AND expires_at > NOW()',
-      [decoded.userId, refresh_token]
+      [decoded.userId.toString(), refresh_token]
     );
 
     if (sessionRows.length === 0) {
@@ -224,13 +224,13 @@ router.post('/refresh', async (req, res) => {
     const ipLocation = await getIPLocation(userIP);
     await pool.execute(
       'UPDATE users SET location = ? WHERE id = ?',
-      [ipLocation, decoded.userId]
+      [ipLocation, decoded.userId.toString()]
     );
 
     // 更新会话
     await pool.execute(
       'UPDATE user_sessions SET token = ?, refresh_token = ?, expires_at = DATE_ADD(NOW(), INTERVAL 7 DAY), user_agent = ? WHERE id = ?',
-      [newAccessToken, newRefreshToken, userAgent, sessionRows[0].id]
+      [newAccessToken, newRefreshToken, userAgent, sessionRows[0].id.toString()]
     );
 
     res.json({
@@ -257,7 +257,7 @@ router.post('/logout', authenticateToken, async (req, res) => {
     // 将当前会话设为无效
     await pool.execute(
       'UPDATE user_sessions SET is_active = 0 WHERE user_id = ? AND token = ?',
-      [userId, token]
+      [userId.toString(), token]
     );
 
     console.log(`用户退出成功 - 用户ID: ${userId}`);
@@ -276,11 +276,12 @@ router.post('/logout', authenticateToken, async (req, res) => {
 router.get('/me', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
+
     const [userRows] = await pool.execute(
-      'SELECT id, user_id, nickname, avatar, bio, location, follow_count, isVerified,fans_count, like_count, is_active, created_at, gender, zodiac_sign, mbti, education, major, interests FROM users WHERE id = ?',
-      [String(userId)]
+      'SELECT id, user_id, nickname, avatar, bio, location, follow_count, fans_count, like_count, is_active, created_at, gender, zodiac_sign, mbti, education, major, interests FROM users WHERE id = ?',
+      [userId.toString()]
     );
-    console.log(userRows);
+
     if (userRows.length === 0) {
       return res.status(404).json({ code: 404, message: '用户不存在' });
     }
@@ -297,6 +298,7 @@ router.get('/me', authenticateToken, async (req, res) => {
         user.interests = null;
       }
     }
+
     res.json({
       code: 200,
       message: 'success',
@@ -332,7 +334,7 @@ router.post('/admin/login', async (req, res) => {
     // 验证密码（哈希比较）
     const [passwordCheck] = await pool.execute(
       'SELECT 1 FROM admin WHERE id = ? AND password = SHA2(?, 256)',
-      [admin.id, password]
+      [admin.id.toString(), password]
     );
     
     if (passwordCheck.length === 0) {
@@ -384,7 +386,7 @@ router.get('/admin/me', authenticateToken, async (req, res) => {
 
     const [adminRows] = await pool.execute(
       'SELECT id, username FROM admin WHERE id = ?',
-      [adminId]
+      [adminId.toString()]
     );
 
     if (adminRows.length === 0) {
@@ -441,7 +443,7 @@ router.get('/admin/admins', authenticateToken, async (req, res) => {
       ORDER BY ${sortField} ${sortOrder} 
       LIMIT ? OFFSET ?
     `;
-    const [adminRows] = await pool.execute(dataQuery, [...params, limit, offset]);
+    const [adminRows] = await pool.execute(dataQuery, [...params, String(limit), String(offset)]);
 
     res.json({
       code: 200,
@@ -600,7 +602,7 @@ router.put('/admin/admins/:id/password', authenticateToken, async (req, res) => 
     // 检查管理员是否存在
     const [adminRows] = await pool.execute(
       'SELECT id FROM admin WHERE id = ?',
-      [adminId]
+      [adminId.toString()]
     );
 
     if (adminRows.length === 0) {
@@ -610,7 +612,7 @@ router.put('/admin/admins/:id/password', authenticateToken, async (req, res) => 
     // 更新密码（使用SHA2哈希加密）
     await pool.execute(
       'UPDATE admin SET password = SHA2(?, 256) WHERE id = ?',
-      [password, adminId]
+      [password, adminId.toString()]
     );
 
     res.json({
@@ -642,7 +644,7 @@ router.put('/admin/admins/:id/status', authenticateToken, async (req, res) => {
     // 检查管理员是否存在
     const [adminRows] = await pool.execute(
       'SELECT id FROM admin WHERE id = ?',
-      [adminId]
+      [adminId.toString()]
     );
 
     if (adminRows.length === 0) {
@@ -657,7 +659,7 @@ router.put('/admin/admins/:id/status', authenticateToken, async (req, res) => {
     // 更新状态
     await pool.execute(
       'UPDATE admin SET status = ? WHERE id = ?',
-      [status, adminId]
+      [String(status), adminId.toString()]
     );
 
     res.json({

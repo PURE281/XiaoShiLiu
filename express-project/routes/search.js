@@ -82,19 +82,19 @@ router.get('/', optionalAuth, async (req, res) => {
          ${whereClause}
          ORDER BY p.created_at DESC
          LIMIT ? OFFSET ?`,
-        [...queryParams, String(limit), String(offset)]
+        [...queryParams, limit.toString(), offset.toString()]
       );
 
       // 获取每个笔记的图片、标签和用户点赞收藏状态
       for (let post of postRows) {
         // 获取笔记图片
-        const [images] = await pool.execute('SELECT image_url FROM post_images WHERE post_id = ?', [post.id]);
+        const [images] = await pool.execute('SELECT image_url FROM post_images WHERE post_id = ?', [post.id.toString()]);
         post.images = images.map(img => img.image_url);
 
         // 获取笔记标签
         const [tags] = await pool.execute(
           'SELECT t.id, t.name FROM tags t JOIN post_tags pt ON t.id = pt.tag_id WHERE pt.post_id = ?',
-          [post.id]
+          [post.id.toString()]
         );
         post.tags = tags;
 
@@ -102,13 +102,13 @@ router.get('/', optionalAuth, async (req, res) => {
         if (currentUserId) {
           const [likeResult] = await pool.execute(
             'SELECT id FROM likes WHERE user_id = ? AND target_type = 1 AND target_id = ?',
-            [currentUserId, post.id]
+            [currentUserId.toString(), post.id.toString()]
           );
           post.liked = likeResult.length > 0;
 
           const [collectResult] = await pool.execute(
             'SELECT id FROM collections WHERE user_id = ? AND post_id = ?',
-            [currentUserId, post.id]
+            [currentUserId.toString(), post.id.toString()]
           );
           post.collected = collectResult.length > 0;
         } else {
@@ -189,7 +189,7 @@ router.get('/', optionalAuth, async (req, res) => {
          WHERE u.nickname LIKE ? OR u.user_id LIKE ? 
          ORDER BY u.created_at DESC 
          LIMIT ? OFFSET ?`,
-        [`%${keyword}%`, `%${keyword}%`, String(limit), String(offset)]
+        [`%${keyword}%`, `%${keyword}%`, limit.toString(), offset.toString()]
       );
 
       // 检查关注状态（仅在用户已登录时）
@@ -198,19 +198,19 @@ router.get('/', optionalAuth, async (req, res) => {
           // 检查是否已关注
           const [followResult] = await pool.execute(
             'SELECT id FROM follows WHERE follower_id = ? AND following_id = ?',
-            [currentUserId, user.id]
+            [currentUserId.toString(), user.id.toString()]
           );
           user.isFollowing = followResult.length > 0;
 
           // 检查是否互相关注
           const [mutualResult] = await pool.execute(
             'SELECT id FROM follows WHERE follower_id = ? AND following_id = ?',
-            [user.id, currentUserId]
+            [user.id.toString(), currentUserId.toString()]
           );
           user.isMutual = user.isFollowing && mutualResult.length > 0;
 
           // 设置按钮类型
-          if (user.id === currentUserId) {
+          if (user.id.toString() === currentUserId.toString()) {
             user.buttonType = 'self';
           } else if (user.isMutual) {
             user.buttonType = 'mutual';

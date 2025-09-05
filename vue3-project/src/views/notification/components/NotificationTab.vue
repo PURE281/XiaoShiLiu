@@ -153,7 +153,7 @@ defineExpose({
   right: 6px;
   width: 8px;
   height: 8px;
-  background: var(--primary-color);
+  background: #fe2844;
   border-radius: 50%;
   pointer-events: none;
 }

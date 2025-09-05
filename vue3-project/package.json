@@ -1,7 +1,7 @@
 {
   "name": "vue3-project",
   "version": "1.0.0",
-  "description": "小红包 - R.E.D团粉Vue3前端项目",
+  "description": "小石榴校园图文社区Vue3前端项目",
   "author": "@ZTMYO",
   "private": true,
   "type": "module",
@@ -20,10 +20,10 @@
     "vue3-emoji-picker": "^1.1.8"
   },
   "devDependencies": {
-    "@vitejs/plugin-vue": "^6.0.0",
+    "@vitejs/plugin-vue": "^5.0.0",
     "fast-glob": "^3.3.3",
     "patch-package": "^8.0.0",
-    "vite": "^7.0.0",
+    "vite": "^5.4.0",
     "vite-plugin-svg-icons": "^2.0.1",
     "vite-plugin-vue-devtools": "^7.7.7"
   }

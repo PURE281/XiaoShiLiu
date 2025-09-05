@@ -41,7 +41,7 @@ const updateSlider = () => {
         const containerRect = containerRef.value.getBoundingClientRect()
 
         // 计算滑块相对于容器的位置
-        sliderLeft.value = tabRect.left - containerRect.left
+        sliderLeft.value = tabRect.left - containerRect.left + containerRef.value.scrollLeft
         sliderWidth.value = tabRect.width
     })
 }
@@ -92,10 +92,17 @@ onMounted(() => {
     nextTick(updateSlider)
     // 监听窗口大小变化，重新计算滑块位置
     window.addEventListener('resize', updateSlider)
+    // 监听容器滚动事件，实时更新滑块位置
+    if (containerRef.value) {
+        containerRef.value.addEventListener('scroll', updateSlider)
+    }
 })
 
 onUnmounted(() => {
     window.removeEventListener('resize', updateSlider)
+    if (containerRef.value) {
+        containerRef.value.removeEventListener('scroll', updateSlider)
+    }
 })
 </script>
 
