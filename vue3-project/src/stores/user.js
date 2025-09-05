@@ -32,7 +32,7 @@ export const useUserStore = defineStore('user', () => {
         localStorage.setItem('token', response.data.tokens.access_token)
         localStorage.setItem('refreshToken', response.data.tokens.refresh_token)
         localStorage.setItem('userInfo', JSON.stringify(response.data.user))
-        return { success: false }
+        return { success: true }
       } else {
         return {
           success: false,

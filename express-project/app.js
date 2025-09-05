@@ -26,7 +26,7 @@ const notificationsRoutes = require('./routes/notifications');
 const uploadRoutes = require('./routes/upload');
 const statsRoutes = require('./routes/stats');
 const adminRoutes = require('./routes/admin');
-const surveysRoutes = require('./routes/surveys');
+// const surveysRoutes = require('./routes/surveys');
 
 const app = express();
 
@@ -61,7 +61,7 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/posts', postsRoutes);
-app.use('/api/surveys', surveysRoutes); 
+// app.use('/api/surveys', surveysRoutes); 
 app.use('/api/comments', commentsRoutes);
 app.use('/api/likes', likesRoutes);
 app.use('/api/tags', tagsRoutes);
