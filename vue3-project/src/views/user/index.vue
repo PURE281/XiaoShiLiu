@@ -243,6 +243,11 @@ function goToFollowList(type) {
   })
 }
 
+// 开始认证
+function startVerification() {
+  userStore.openVerificationModal()
+}
+
 // 处理关注事件
 function handleFollow(userId) {
   console.log('用户页面: 收到关注事件，用户ID:', userId)
@@ -301,6 +306,7 @@ function handleCollect(data) {
   <div class="content-container">
     <div class="user-info" v-if="userStore.isLoggedIn">
       <div class="basic-info">
+
         <img :src="userStore.userInfo?.avatar || defaultAvatar" :alt="userStore.userInfo?.nickname || '用户头像'"
           class="avatar" @click="openAvatarCropModal" @error="handleAvatarError">
         <div class="user-basic">
@@ -308,12 +314,25 @@ function handleCollect(data) {
           <div class="user-content">
             <div class="user-id text-ellipsis">聚包盆号：{{ userStore.userInfo?.user_id || '' }}</div>
             <div class="user-IP text-ellipsis">IP属地：{{ userStore.userInfo?.location || '未知' }}</div>
+            <!-- 认证图标 - 参考B站大会员样式 -->
+            <div v-if="userStore.isVerified" class="verified-badge">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="#ff6700" class="verified-icon">
+                <path
+                  d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+              </svg>
+              <span class="verified-text">已认证</span>
+            </div>
           </div>
+
         </div>
         <div class="edit-profile-button-wrapper">
           <button class="edit-profile-btn" @click="openEditProfileModal">
             编辑资料
           </button>
+          <button v-if="!userStore.isVerified" class="verify-btn" @click="startVerification">
+            开始认证
+          </button>
+
         </div>
       </div>
       <div class="user-desc">
@@ -801,6 +820,93 @@ function handleCollect(data) {
   background: #6e6e6e2c;
   color: var(--text-color-secondary);
   border-color: var(--text-color-tertiary);
+}
+
+/* 认证按钮样式 */
+.verify-btn {
+  margin-left: 12px;
+  padding: 6px 16px;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.verify-btn:hover {
+  background-color: var(--primary-color-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+}
+
+/* 认证图标样式 - 参考B站大会员样式 */
+.verified-badge {
+  display: flex;
+  align-items: center;
+  margin-left: 12px;
+  padding: 4px 8px;
+  background: linear-gradient(135deg, #ff6700, #ff9500);
+  border-radius: 12px;
+  font-size: 12px;
+  color: white;
+  font-weight: 500;
+  position: relative;
+  overflow: hidden;
+  width: 100px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.verified-badge::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  animation: shine 2s infinite;
+}
+
+@keyframes shine {
+  100% {
+    left: 100%;
+  }
+}
+
+.verified-icon {
+  margin-right: 4px;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.2));
+}
+
+.verified-text {
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+}
+
+/* 大屏幕下调整认证按钮位置 */
+@media (min-width: 901px) {
+  .verify-btn {
+    margin-top: 0;
+    margin-left: 16px;
+  }
+}
+
+/* 小屏幕下调整按钮布局 */
+@media (max-width: 900px) {
+  .edit-profile-button-wrapper {
+    position: static;
+    transform: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-end;
+  }
+  
+  .verify-btn {
+    margin-left: 0;
+  }
 }
 
 /* ---------- 7. 通用工具类 ---------- */

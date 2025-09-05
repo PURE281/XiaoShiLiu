@@ -265,7 +265,10 @@ const handleSubmit = async () => {
       setTimeout(() => {
         emit('success')
         closeModal()
-        window.location.reload()
+        // 注册成功不刷新页面，让认证模态框正常显示
+        if (isLoginMode.value) {
+          window.location.reload()
+        }
       }, 1000)
     } else {
       unifiedMessage.value = result.message

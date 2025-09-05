@@ -170,7 +170,7 @@ router.post('/login', async (req, res) => {
       }
     }
 
-    console.log(`用户登录成功 - 用户ID: ${user.id}, 小石榴号: ${user.user_id}`);
+    // console.log(`用户登录成功 - 用户ID: ${user.id}, 小石榴号: ${user.user_id}`);
 
     res.json({
       code: 200,
@@ -275,10 +275,9 @@ router.post('/logout', authenticateToken, async (req, res) => {
 // 获取当前用户信息
 router.get('/me', authenticateToken, async (req, res) => {
   try {
-    console.log(req.user);
     const userId = req.user.id;
     const [userRows] = await pool.execute(
-      'SELECT id, user_id, nickname, avatar, bio, location, follow_count, fans_count, like_count, is_active, created_at, gender, zodiac_sign, mbti, education, major, interests FROM users WHERE id = ?',
+      'SELECT id, user_id, nickname, avatar, bio, location, follow_count, isVerified,fans_count, like_count, is_active, created_at, gender, zodiac_sign, mbti, education, major, interests FROM users WHERE id = ?',
       [String(userId)]
     );
     console.log(userRows);
@@ -298,7 +297,6 @@ router.get('/me', authenticateToken, async (req, res) => {
         user.interests = null;
       }
     }
-    console.log(user);
     res.json({
       code: 200,
       message: 'success',

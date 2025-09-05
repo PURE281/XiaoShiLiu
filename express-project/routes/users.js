@@ -955,7 +955,7 @@ router.get('/:id/mutual-follows', optionalAuth, async (req, res) => {
 router.get('/:id/stats', async (req, res) => {
   try {
     const userIdParam = req.params.id;
-    console.log(`获取用户统计信息 - 用户ID: ${userIdParam}`);
+    // console.log(`获取用户统计信息 - 用户ID: ${userIdParam}`);
 
     // 通过小石榴号查找对应的数字ID
     const [userRows] = await pool.execute('SELECT id FROM users WHERE user_id = ?', [userIdParam]);

@@ -28,6 +28,8 @@ import FollowManagement from '@/views/admin/FollowManagement.vue'
 import NotificationManagement from '@/views/admin/NotificationManagement.vue'
 import SessionManagement from '@/views/admin/SessionManagement.vue'
 import AdminManagement from '@/views/admin/AdminManagement.vue'
+import SurveyManagement from '@/views/admin/SurveyManagement.vue'
+import QuestionManagement from '@/views/admin/QuestionManagement.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -227,11 +229,9 @@ const router = createRouter({
           name: 'admin_sessions',
           component: SessionManagement
         },
-        {
-          path: 'admins',
-          name: 'admin_admins',
-          component: AdminManagement
-        }
+        {          path: 'admins',          name: 'admin_admins',          component: AdminManagement        },
+        {          path: 'surveys',          name: 'admin_surveys',          component: SurveyManagement        },
+        {          path: 'survey-questions',          name: 'admin_survey_questions',          component: QuestionManagement        }
       ]
     }
   ],

@@ -3,7 +3,15 @@
 
     <div class="card-header">
       <div class="avatar-info">
-        <img :src="userInfo.avatar" :alt="userInfo.nickname" class="avatar" @error="handleAvatarError" />
+        <div class="avatar-container">
+          <img :src="userInfo.avatar" :alt="userInfo.nickname" class="avatar" @error="handleAvatarError" />
+          <div v-if="showVerifiedBadge" class="verified-badge">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="verified-icon">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="9 12 11 14 15 10"/>
+            </svg>
+          </div>
+        </div>
         <span class="nickname">{{ userInfo.nickname }}</span>
       </div>
       <FollowButton v-if="!isCurrentUser" :user-id="userInfo.user_id || userInfo.userId || userInfo.id"
@@ -89,14 +97,19 @@ const props = defineProps({
 
 const emit = defineEmits(['follow', 'unfollow', 'click'])
 
+// 判断是否显示认证标识
+const showVerifiedBadge = computed(() => {
+  return props.userInfo.isVerified || (userStore.isLoggedIn && userStore.isVerified && isCurrentUser.value)
+})
+
 // 判断是否为当前用户
 const isCurrentUser = computed(() => {
-  if (!userStore.isLoggedIn || !userStore.userInfo) {
+  if (!userStore.isLoggedIn || !userStore.userInfo || !props.userInfo) {
     return false
   }
 
   const currentUserId = userStore.userInfo.user_id // 当前用户的聚包盆号
-  const userId = props.userInfo.id // 传入的用户ID（聚包盆号）
+  const userId = props.userInfo.user_id || props.userInfo.userId || props.userInfo.id // 传入的用户ID，考虑多种可能的属性名
 
   return currentUserId === userId
 })
@@ -106,6 +119,11 @@ const displayImages = computed(() => {
   const images = props.userInfo.images ? props.userInfo.images.slice(0, 3) : []
   return images
 })
+
+// 开始认证
+function startVerification() {
+  userStore.openVerificationModal()
+}
 
 // 处理卡片点击事件
 function handleCardClick() {
@@ -200,25 +218,48 @@ watch(() => props.userInfo, (newUserInfo) => {
 }
 
 .avatar-info {
-  display: flex;
-  align-items: center;
-  flex: 1;
-  min-width: 0;
-  height: 40px;
-  margin-right: 12px;
-}
+    display: flex;
+    align-items: center;
+    flex: 1;
+    min-width: 0;
+    height: 40px;
+    margin-right: 12px;
+  }
 
-.avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  object-fit: cover;
-  margin-right: 12px;
-  flex-shrink: 0;
-  background: transparent;
-  border: 1px solid var(--border-color-secondary);
-  transition: all 0.3s ease;
-}
+  .avatar-container {
+    position: relative;
+    margin-right: 12px;
+  }
+
+  .avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-right: 0;
+    flex-shrink: 0;
+    background: transparent;
+    border: 1px solid var(--border-color-secondary);
+    transition: all 0.3s ease;
+  }
+
+  .verified-badge {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    background-color: var(--primary-color);
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid var(--bg-color-primary);
+  }
+
+  .verified-icon {
+    color: white;
+  }
 
 .avatar:not([src]),
 .avatar[src=""] {
@@ -234,6 +275,24 @@ watch(() => props.userInfo, (newUserInfo) => {
   overflow: hidden;
   text-overflow: ellipsis;
   flex: 1;
+}
+
+.verify-btn {
+  padding: 6px 16px;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.verify-btn:hover {
+  background-color: var(--primary-color-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
 }
 
 /* 第二部分：简介和统计数据 */

@@ -8,6 +8,9 @@ export const useUserStore = defineStore('user', () => {
   const refreshToken = ref(localStorage.getItem('refreshToken') || '')
   const userInfo = ref(null)
   const isLoading = ref(false)
+  const showVerificationModal = ref(false)
+  const verificationScore = ref(0)
+  const isVerified = ref(true)
 
   // 计算属性
   const isLoggedIn = computed(() => {
@@ -25,11 +28,13 @@ export const useUserStore = defineStore('user', () => {
         token.value = response.data.tokens.access_token
         refreshToken.value = response.data.tokens.refresh_token
         userInfo.value = response.data.user
-
+        console.log(response.data)
         // 保存到localStorage
         localStorage.setItem('token', response.data.tokens.access_token)
         localStorage.setItem('refreshToken', response.data.tokens.refresh_token)
         localStorage.setItem('userInfo', JSON.stringify(response.data.user))
+        localStorage.setItem('isVerified', response.data.tokens.isVerified)
+        localStorage.setItem('verificationScore', verificationScore.value.toString())
 
         // Token已保存到localStorage
 
@@ -67,6 +72,11 @@ export const useUserStore = defineStore('user', () => {
         localStorage.setItem('token', response.data.tokens.access_token)
         localStorage.setItem('refreshToken', response.data.tokens.refresh_token)
         localStorage.setItem('userInfo', JSON.stringify(response.data.user))
+        localStorage.setItem('isVerified', isVerified.value.toString())
+        localStorage.setItem('verificationScore', verificationScore.value.toString())
+
+        // 注册成功后打开认证模态框
+        showVerificationModal.value = true
 
         return { success: true }
       } else {
@@ -101,6 +111,10 @@ export const useUserStore = defineStore('user', () => {
       localStorage.removeItem('token')
       localStorage.removeItem('refreshToken')
       localStorage.removeItem('userInfo')
+      localStorage.removeItem('isVerified')
+      localStorage.removeItem('verificationScore')
+      isVerified.value = false
+      verificationScore.value = 0
 
       // 重置未读通知数量
       try {
@@ -119,6 +133,8 @@ export const useUserStore = defineStore('user', () => {
     if (savedUserInfo && token.value) {
       try {
         userInfo.value = JSON.parse(savedUserInfo)
+        isVerified.value = localStorage.getItem('isVerified') === 'true'
+        verificationScore.value = parseInt(localStorage.getItem('verificationScore') || '0')
       } catch (error) {
         console.error('解析用户信息失败:', error)
         // 清除无效数据
@@ -154,11 +170,16 @@ export const useUserStore = defineStore('user', () => {
   const getCurrentUser = async () => {
     try {
       const response = await authApi.getCurrentUser()
-      console.log('获取当前用户信息:', response)
       if (response.success && response.data) {
         userInfo.value = response.data
-        // 更新localStorage中的用户信息
-        localStorage.setItem('userInfo', JSON.stringify(response.data))
+        // 更新用户信息和认证状态
+      isVerified.value = response.data.isVerified || false
+      verificationScore.value = response.data.verificationScore || 0
+      
+      // 更新localStorage中的用户信息
+      localStorage.setItem('userInfo', JSON.stringify(response.data))
+      localStorage.setItem('isVerified', isVerified.value.toString())
+      localStorage.setItem('verificationScore', verificationScore.value.toString())
         return response.data
       } else {
         console.error('获取当前用户信息失败:', response.message)
@@ -201,12 +222,64 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
+  // 提交认证问卷
+  const submitVerificationSurvey = async (surveyData) => {
+    try {
+      isLoading.value = true
+      
+      // 模拟API请求
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      // 更新认证状态
+      isVerified.value = surveyData.score >= 60
+      verificationScore.value = surveyData.score
+      
+      // 更新用户信息
+      if (userInfo.value) {
+        userInfo.value.isVerified = isVerified.value
+        userInfo.value.verificationScore = verificationScore.value
+        localStorage.setItem('userInfo', JSON.stringify(userInfo.value))
+      }
+      
+      // 保存认证状态到localStorage
+      localStorage.setItem('isVerified', isVerified.value.toString())
+      localStorage.setItem('verificationScore', verificationScore.value.toString())
+      
+      return {
+        success: true,
+        isVerified: isVerified.value,
+        score: verificationScore.value
+      }
+    } catch (error) {
+      console.error('提交认证问卷失败:', error)
+      return {
+        success: false,
+        message: error.message || '提交失败，请稍后重试'
+      }
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  // 打开认证模态框
+  const openVerificationModal = () => {
+    showVerificationModal.value = true
+  }
+
+  // 关闭认证模态框
+  const closeVerificationModal = () => {
+    showVerificationModal.value = false
+  }
+
   return {
     // 状态
     token,
     refreshToken,
     userInfo,
     isLoading,
+    showVerificationModal,
+    isVerified,
+    verificationScore,
 
     // 计算属性
     isLoggedIn,
@@ -216,9 +289,12 @@ export const useUserStore = defineStore('user', () => {
     register,
     logout,
     initUserInfo,
-    getCurrentUser,
     refreshUserToken,
+    getCurrentUser,
     getUserStats,
-    updateUserInfo
+    updateUserInfo,
+    submitVerificationSurvey,
+    openVerificationModal,
+    closeVerificationModal
   }
 })

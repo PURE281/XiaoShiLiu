@@ -8,6 +8,7 @@ import { useChangePasswordStore } from '@/stores/changePassword'
 import AuthModal from '@/components/modals/AuthModal.vue'
 import AboutModal from '@/components/modals/AboutModal.vue'
 import ChangePasswordModal from '@/components/modals/ChangePasswordModal.vue'
+import VerificationModal from '@/components/modals/VerificationModal.vue'
 
 const userStore = useUserStore()
 const authStore = useAuthStore()
@@ -18,6 +19,12 @@ const changePasswordStore = useChangePasswordStore()
 onMounted(() => {
   userStore.initUserInfo()
 })
+
+// 处理认证成功
+const handleVerificationSuccess = () => {
+  // 可以在这里添加认证成功后的操作，例如刷新用户信息等
+  userStore.getCurrentUser()
+}
 </script>
 
 <template>
@@ -29,6 +36,7 @@ onMounted(() => {
     <ChangePasswordModal v-if="changePasswordStore.showChangePasswordModal" 
       :userInfo="userStore.userInfo"
       @close="changePasswordStore.closeChangePasswordModal" />
+    <VerificationModal v-if="userStore.showVerificationModal" @close="userStore.closeVerificationModal" @success="handleVerificationSuccess" />
   </div>
 </template>
 
