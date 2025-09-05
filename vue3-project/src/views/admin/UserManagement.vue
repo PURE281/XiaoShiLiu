@@ -7,7 +7,7 @@
 import CrudTable from '@/views/admin/components/CrudTable.vue'
 const columns = [
   { key: 'id', label: 'ID', sortable: true },
-  { key: 'user_id', label: '聚包盆号', type: 'user-link', sortable: false },
+  { key: 'user_id', label: '聚包盆号', type: 'user-link', sortable: false , maxLength: 15},
   { key: 'nickname', label: '用户昵称', sortable: false },
   { key: 'avatar', label: '头像', type: 'image', sortable: false },
   { key: 'bio', label: '个人简介', type: 'content', sortable: false },

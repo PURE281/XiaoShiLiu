@@ -47,6 +47,13 @@ const openAvatarCropModal = () => {
   showEditProfileModal.value = true
 }
 
+// 处理头像加载失败
+function handleAvatarError(event) {
+  import('@/assets/imgs/avatar.png').then(module => {
+    event.target.src = module.default
+  })
+}
+
 // 处理资料保存成功
 const handleProfileSaved = async (formData) => {
   try {
@@ -295,7 +302,7 @@ function handleCollect(data) {
     <div class="user-info" v-if="userStore.isLoggedIn">
       <div class="basic-info">
         <img :src="userStore.userInfo?.avatar || defaultAvatar" :alt="userStore.userInfo?.nickname || '用户头像'"
-          class="avatar" @click="openAvatarCropModal">
+          class="avatar" @click="openAvatarCropModal" @error="handleAvatarError">
         <div class="user-basic">
           <div class="user-nickname">{{ userStore.userInfo?.nickname || '用户' }}</div>
           <div class="user-content">

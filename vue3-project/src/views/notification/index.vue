@@ -639,15 +639,15 @@ const getUserHoverConfig = (userId) => {
         console.error('获取用户笔记封面失败:', error)
       }
 
-      // 获取最新的关注状态 - 使用autoId来保持与loadFollowsData的一致性
+      // 获取最新的关注状态 - 使用小石榴号来获取关注状态
       let followStatus = { followed: false, isMutual: false, buttonType: 'follow' }
       try {
-        const followResponse = await followStore.fetchFollowStatus(userAutoId)
+        const followResponse = await followStore.fetchFollowStatus(userId)
         if (followResponse.success) {
           followStatus = followResponse.data
         } else {
           // 如果获取失败，尝试从store中获取
-          const storeState = followStore.getUserFollowState(userAutoId)
+          const storeState = followStore.getUserFollowState(userId)
           if (storeState.hasState) {
             followStatus = {
               followed: storeState.followed,

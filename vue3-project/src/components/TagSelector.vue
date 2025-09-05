@@ -3,7 +3,7 @@
 
     <div class="tag-input-container">
       <input v-model="tagInput" @keydown.enter.prevent="addTag" @keydown.comma.prevent="addTag" @input="onTagInput"
-        class="tag-input" placeholder="输入标签名称，按回车添加" maxlength="20" />
+        class="tag-input" placeholder="输入标签名称，按回车添加" maxlength="8" />
       <button type="button" @click="addTag" class="add-tag-btn" :disabled="!tagInput.trim()">
         添加
       </button>
@@ -208,7 +208,7 @@ onMounted(() => {
 .add-tag-btn {
   padding: 8px 16px;
   background: var(--primary-color);
-  color: var(--text-color-inverse);
+  color: #fff;
   border: none;
   border-radius: 4px;
   cursor: pointer;

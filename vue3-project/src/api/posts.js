@@ -16,7 +16,7 @@ function transformPostData(backendPost) {
     id: backendPost.id,
     image: (backendPost.images && backendPost.images[0]) || new URL('@/assets/imgs/未加载.png', import.meta.url).href,
     title: backendPost.title,
-    avatar: backendPost.user_avatar || new URL('@/assets/imgs/未加载.png', import.meta.url).href,
+    avatar: backendPost.user_avatar || new URL('@/assets/imgs/avatar.png', import.meta.url).href,
     author: backendPost.nickname || '匿名用户',
     location: backendPost.location || '', // 添加作者的location字段
     likeCount: likeCount,
@@ -27,7 +27,7 @@ function transformPostData(backendPost) {
     path: `/post/${backendPost.id}`,
     category: backendPost.category || 'general',
     author_auto_id: backendPost.author_auto_id, // 作者自增ID
-    author_account: backendPost.user_id, // 作者小石榴号
+    author_account: backendPost.author_account, // 作者小石榴号
     user_id: backendPost.user_id, // 保持兼容性
     // 保留原始数据以备需要
     originalData: {
@@ -41,7 +41,7 @@ function transformPostData(backendPost) {
       userId: backendPost.user_id
     }
   }
-  
+
   return transformedData;
 }
 
@@ -387,10 +387,10 @@ export async function getDraftPosts(params = {}) {
     })
 
     const response = await request.get('/posts', { params: queryParams })
-    
+
     if (response.success && response.data && response.data.posts) {
       const transformedPosts = response.data.posts.map(transformPostData)
-      
+
       return {
         success: true,
         data: {

@@ -195,6 +195,13 @@ const getFollowStatus = async () => {
   }
 }
 
+// 处理头像加载失败
+function handleAvatarError(event) {
+  import('@/assets/imgs/avatar.png').then(module => {
+    event.target.src = module.default
+  })
+}
+
 // 监听路由参数变化
 watch(() => route.params.userId, (newUserId) => {
   if (newUserId) {
@@ -233,7 +240,8 @@ onMounted(async () => {
 
     <div class="user-info" v-if="userInfo.nickname">
       <div class="basic-info">
-        <img :src="userInfo.avatar || defaultAvatar" :alt="userInfo.nickname || '用户头像'" class="avatar">
+        <img :src="userInfo.avatar || defaultAvatar" :alt="userInfo.nickname || '用户头像'" class="avatar"
+          @error="handleAvatarError">
         <div class="user-basic">
           <div class="user-nickname">{{ userInfo?.nickname || '用户' }}</div>
           <div class="user-content">

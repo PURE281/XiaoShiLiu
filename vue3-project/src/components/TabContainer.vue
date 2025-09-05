@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, nextTick, watch, onMounted, onUnmounted } from 'vue'
 
 const props = defineProps({
     tabs: {
@@ -20,11 +20,30 @@ const props = defineProps({
 const emit = defineEmits(['tab-change'])
 
 const containerRef = ref(null)
+const tabItems = ref([])
 const activeId = ref(props.activeTab || (props.tabs.length > 0 ? props.tabs[0].id : ''))
+const sliderLeft = ref(0)
+const sliderWidth = ref(0)
 
 function tabSelected(item) {
     activeId.value = item.id
     emit('tab-change', item)
+    updateSlider()
+}
+
+// 更新滑块位置和宽度
+const updateSlider = () => {
+    nextTick(() => {
+        const activeIndex = props.tabs.findIndex(tab => tab.id === activeId.value)
+        if (activeIndex === -1 || !tabItems.value[activeIndex]) return
+
+        const tabRect = tabItems.value[activeIndex].getBoundingClientRect()
+        const containerRect = containerRef.value.getBoundingClientRect()
+
+        // 计算滑块相对于容器的位置
+        sliderLeft.value = tabRect.left - containerRect.left
+        sliderWidth.value = tabRect.width
+    })
 }
 
 // 拖拽滑动逻辑（仅在enableDrag为true时启用）
@@ -61,20 +80,36 @@ function onMouseMove(e) {
 }
 
 // 监听activeTab prop变化
-import { watch } from 'vue'
 watch(() => props.activeTab, (newVal) => {
     // 移除条件判断，允许空字符串也能更新activeId
     activeId.value = newVal
+    updateSlider()
+})
+
+// 组件挂载和卸载
+onMounted(() => {
+    // 初始化滑块位置
+    nextTick(updateSlider)
+    // 监听窗口大小变化，重新计算滑块位置
+    window.addEventListener('resize', updateSlider)
+})
+
+onUnmounted(() => {
+    window.removeEventListener('resize', updateSlider)
 })
 </script>
 
 <template>
     <div class="tab-container" ref="containerRef" @mousedown="onMouseDown" @mouseleave="onMouseLeave"
         @mouseup="onMouseUp" @mousemove="onMouseMove">
-        <div v-for="item in tabs" :key="item.id" :id="item.id" :class="{ active: activeId === item.id }"
-            class="tab-item" @click="tabSelected(item)">
+        <div v-for="(item, index) in tabs" :key="item.id" :id="item.id" :class="{ active: activeId === item.id }"
+            class="tab-item" @click="tabSelected(item)" ref="tabItems">
             {{ item.label }}
         </div>
+        <div class="tab-slider" :style="{
+            left: sliderLeft + 'px',
+            width: sliderWidth + 'px'
+        }"></div>
     </div>
 </template>
 
@@ -106,7 +141,6 @@ watch(() => props.activeTab, (newVal) => {
 }
 
 .tab-item {
-    width: 64px;
     height: 40px;
     font-size: 16px;
     color: var(--text-color-secondary);
@@ -118,7 +152,13 @@ watch(() => props.activeTab, (newVal) => {
     display: inline-block;
     flex-shrink: 0;
     user-select: none;
-    min-width: 64px;
+    padding: 0 16px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
+    position: relative;
+    z-index: 2;
 }
 
 .tab-item:hover {
@@ -129,7 +169,20 @@ watch(() => props.activeTab, (newVal) => {
 .tab-item.active {
     color: var(--text-color-primary);
     font-weight: bold;
+    background: transparent;
+    transition: color 0.2s ease;
+}
+
+/* 滑块指示器 */
+.tab-slider {
+    position: absolute;
+    height: 40px;
+    border-radius: 20px;
     background: var(--bg-color-secondary);
-    transition: background-color 0.2s ease;
+    transition: left 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+        width 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+        background-color 0.2s ease;
+    z-index: 1;
+    bottom: 22.5px;
 }
 </style>

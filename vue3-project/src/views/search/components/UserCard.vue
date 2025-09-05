@@ -1,12 +1,10 @@
 <template>
     <div class="user-card" @click="handleUserClick">
-
         <BaseSkeleton v-if="!avatarLoaded" type="user-card" avatar-size="48px" :show-stats="true" :show-button="true" />
-
-
         <div class="user-content" :class="{ 'content-hidden': !avatarLoaded }">
             <div class="user-avatar" v-user-hover="userHoverConfig">
-                <img v-img-lazy="user.avatar" :alt="user.nickname" class="avatar-img" @load="onAvatarLoaded">
+                <img v-img-lazy="user.avatar" :alt="user.nickname" class="avatar-img lazy-avatar" @load="onAvatarLoaded"
+                    @error="handleAvatarError">
             </div>
             <div class="user-info">
                 <div class="user-main">
@@ -79,7 +77,12 @@ const isCurrentUser = computed(() => {
 
     return currentUserId === userId
 })
-
+// 处理头像加载失败
+function handleAvatarError(event) {
+    import('@/assets/imgs/avatar.png').then(module => {
+        event.target.src = module.default
+    })
+}
 function formatNumber(num) {
     // 处理null、undefined或非数字值
     if (num == null || isNaN(num)) {
@@ -171,12 +174,12 @@ const userHoverConfig = computed(() => ({
         // 获取最新的关注状态
         let followStatus = { followed: false, isMutual: false, buttonType: 'follow' }
         try {
-            const followResponse = await followStore.fetchFollowStatus(userAutoId)
+            const followResponse = await followStore.fetchFollowStatus(userId)
             if (followResponse.success) {
                 followStatus = followResponse.data
             } else {
                 // 如果获取失败，尝试从store中获取
-                const storeState = followStore.getUserFollowState(userAutoId)
+                const storeState = followStore.getUserFollowState(userId)
                 if (storeState.hasState) {
                     followStatus = {
                         followed: storeState.followed,
@@ -211,10 +214,12 @@ const userHoverConfig = computed(() => ({
         return baseInfo
     },
     onFollow: (userInfo) => {
-        handleFollow(props.user.id) // 使用数字id进行关注操作
+        const userId = props.user.user_id || props.user.userId
+        handleFollow(userId) // 使用小石榴号进行关注操作
     },
     onUnfollow: (userInfo) => {
-        handleUnfollow(props.user.id) // 使用数字id进行取消关注操作
+        const userId = props.user.user_id || props.user.userId
+        handleUnfollow(userId) // 使用小石榴号进行取消关注操作
     },
     delay: 500
 }))
@@ -269,7 +274,6 @@ const userHoverConfig = computed(() => ({
     height: 48px;
     border-radius: 50%;
     object-fit: cover;
-    background-color: #f0f0f0;
 }
 
 .user-info {

@@ -16,6 +16,71 @@ router.get('/', optionalAuth, async (req, res) => {
     const userId = req.query.user_id ? parseInt(req.query.user_id) : null;
     const currentUserId = req.user ? req.user.id : null;
 
+    if (isDraft === 1) {
+      if (!currentUserId) {
+        return res.status(401).json({ code: 401, message: '查看草稿需要登录' });
+      }
+      const forcedUserId = currentUserId;
+      
+      let query = `
+        SELECT p.*, u.nickname, u.avatar as user_avatar, u.user_id as author_account, u.id as author_auto_id, u.location
+        FROM posts p
+        LEFT JOIN users u ON p.user_id = u.id
+        WHERE p.is_draft = ? AND p.user_id = ?
+      `;
+      let queryParams = [isDraft, forcedUserId];
+      
+      if (category) {
+        query += ` AND p.category = ?`;
+        queryParams.push(category);
+      }
+      
+      query += ` ORDER BY p.created_at DESC LIMIT ? OFFSET ?`;
+      queryParams.push(limit, offset);
+      
+      const [rows] = await pool.execute(query, queryParams);
+      
+      // 获取每个草稿的图片和标签
+      for (let post of rows) {
+        // 获取笔记图片
+        const [images] = await pool.execute('SELECT image_url FROM post_images WHERE post_id = ?', [post.id]);
+        post.images = images.map(img => img.image_url);
+
+        // 获取笔记标签
+        const [tags] = await pool.execute(
+          'SELECT t.id, t.name FROM tags t JOIN post_tags pt ON t.id = pt.tag_id WHERE pt.post_id = ?',
+          [post.id]
+        );
+        post.tags = tags;
+        
+        // 草稿不需要点赞收藏状态
+        post.liked = false;
+        post.collected = false;
+      }
+      
+      // 获取草稿总数
+      const [countResult] = await pool.execute(
+        'SELECT COUNT(*) as total FROM posts WHERE is_draft = ? AND user_id = ?' + (category ? ' AND category = ?' : ''),
+        category ? [isDraft, forcedUserId, category] : [isDraft, forcedUserId]
+      );
+      const total = countResult[0].total;
+      const pages = Math.ceil(total / limit);
+      
+      return res.json({
+        code: 200,
+        message: 'success',
+        data: {
+          posts: rows,
+          pagination: {
+            page,
+            limit,
+            total,
+            pages
+          }
+        }
+      });
+    }
+
     let query = `
       SELECT p.*, u.nickname, u.avatar as user_avatar, u.user_id as author_account, u.id as author_auto_id, u.location
       FROM posts p

@@ -167,21 +167,32 @@ const handleFocus = (event) => {
 }
 
 const handleBlur = (event) => {
+  const relatedTarget = event.relatedTarget
+  if (
+    relatedTarget &&
+    (relatedTarget.tagName === 'INPUT' ||
+      relatedTarget.tagName === 'TEXTAREA' ||
+      relatedTarget.isContentEditable)
+  ) {
+    emit('blur', event)
+    return
+  }
+
   // 检查输入框是否有实际内容
   const hasContent = inputRef.value && inputRef.value.textContent.trim().length > 0
-  
+
   if (hasContent) {
     const selection = window.getSelection()
     if (selection.rangeCount > 0) {
       const range = selection.getRangeAt(0)
-      
+
       // 创建隐藏的标记节点
       const markerId = 'cursor-marker-' + Date.now()
       const marker = document.createElement('span')
       marker.id = markerId
       marker.style.display = 'none'
       marker.setAttribute('data-cursor-marker', 'true')
-      
+
       // 在光标位置插入标记节点
       try {
         range.insertNode(marker)
@@ -197,7 +208,7 @@ const handleBlur = (event) => {
     // 空内容时不创建标记，保持placeholder显示
     cursorMarkerId.value = null
   }
-  
+
   emit('blur', event)
 }
 

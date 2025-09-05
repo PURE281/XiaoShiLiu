@@ -255,7 +255,7 @@ router.get('/:id/posts', optionalAuth, async (req, res) => {
 
     // 查询用户发布的笔记
     const query = `
-      SELECT p.*, u.nickname, u.avatar as user_avatar, u.user_id, u.location
+      SELECT p.*, u.nickname, u.avatar as user_avatar, u.user_id as author_account, u.location
       FROM posts p
       LEFT JOIN users u ON p.user_id = u.id
       WHERE ${whereConditions.join(' AND ')}
@@ -341,7 +341,7 @@ router.get('/:id/collections', optionalAuth, async (req, res) => {
     const userId = userRows[0].id;
 
     const [rows] = await pool.execute(
-      `SELECT p.*, u.nickname, u.avatar as user_avatar, u.user_id, u.location, c.created_at as collected_at
+      `SELECT p.*, u.nickname, u.avatar as user_avatar, u.user_id as author_account, u.location, c.created_at as collected_at
        FROM collections c
        LEFT JOIN posts p ON c.post_id = p.id
        LEFT JOIN users u ON p.user_id = u.id
@@ -426,7 +426,7 @@ router.get('/:id/likes', optionalAuth, async (req, res) => {
 
     // 查询笔记列表
     const [rows] = await pool.execute(
-      `SELECT p.*, u.nickname, u.avatar as user_avatar, u.user_id, u.location, l.created_at as liked_at
+      `SELECT p.*, u.nickname, u.avatar as user_avatar, u.user_id as author_account, u.location, l.created_at as liked_at
        FROM likes l
        LEFT JOIN posts p ON l.target_id = p.id
        LEFT JOIN users u ON p.user_id = u.id

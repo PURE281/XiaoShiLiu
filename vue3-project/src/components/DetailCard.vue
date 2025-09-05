@@ -444,7 +444,7 @@ const animationStyle = computed(() => {
 
 const authorData = computed(() => {
   // 使用小石榴号进行用户跳转
-  const userId = props.item.author_account || props.item.originalData?.userId || props.item.user_id
+  const userId = props.item.author_account || props.item.user_id || props.item.originalData?.userId
   const followState = followStore.getUserFollowState(userId)
 
   return {
@@ -594,7 +594,7 @@ const handleDeleteComment = async (comment) => {
     const currentComments = commentStore.getComments(props.item.id)
     if (currentComments && currentComments.comments) {
       const updatedComments = currentComments.comments.filter(c => c.id !== comment.id)
-      
+
       // 使用后端返回的删除数量来更新总数
       const deletedCount = response.data?.deletedCount || 1
       commentStore.updateComments(props.item.id, {
@@ -798,7 +798,7 @@ const handleShareMouseLeave = () => {
 const handleTagClick = (tag) => {
   // 构建搜索页面URL
   const searchUrl = `${window.location.origin}/search_result?tag=${encodeURIComponent(tag)}`
-  
+
   // 在新标签页打开搜索页面
   window.open(searchUrl, '_blank')
 }
@@ -971,7 +971,7 @@ const handleImageLoad = (event, index) => {
     const aspectRatio = img.naturalWidth / img.naturalHeight
 
     const minWidth = 300
-    const maxWidth = 750
+    const maxWidth = props.pageMode ? 500 : 750
 
     const containerHeight = Math.min(window.innerHeight * 0.9, 1020)
 

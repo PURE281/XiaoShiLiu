@@ -57,6 +57,12 @@ const handleLoginClick = () => {
   authStore.openLoginModal()
 }
 
+function handleAvatarError(event) {
+  import('@/assets/imgs/avatar.png').then(module => {
+    event.target.src = module.default
+  })
+}
+
 // 初始化用户信息
 onMounted(() => {
   userStore.initUserInfo()
@@ -99,8 +105,8 @@ onMounted(() => {
       <li v-if="userStore.isLoggedIn">
         <RouterLink :to="menuItems[3].path" class="sidebar-link">
           <span class="sidebar-icon">
-            <img :src="userStore.userInfo?.avatar || defaultAvatar"
-              :alt="userStore.userInfo?.nickname || '用户头像'" class="avatar-icon" />
+            <img :src="userStore.userInfo?.avatar || defaultAvatar" :alt="userStore.userInfo?.nickname || '用户头像'"
+              class="avatar-icon" @error="handleAvatarError" />
           </span>
           <span class="sidebar-label">{{ menuItems[3].label }}</span>
         </RouterLink>

@@ -3,10 +3,11 @@
 
     <div class="card-header">
       <div class="avatar-info">
-        <img :src="userInfo.avatar" :alt="userInfo.nickname" class="avatar" />
+        <img :src="userInfo.avatar" :alt="userInfo.nickname" class="avatar" @error="handleAvatarError" />
         <span class="nickname">{{ userInfo.nickname }}</span>
       </div>
-      <FollowButton v-if="!isCurrentUser" :user-id="userInfo.id" :is-following="userInfo.isFollowing" :follow-text="getFollowText(userInfo)"
+      <FollowButton v-if="!isCurrentUser" :user-id="userInfo.user_id || userInfo.userId || userInfo.id"
+        :is-following="userInfo.isFollowing" :follow-text="getFollowText(userInfo)"
         :following-text="getFollowingText(userInfo)" size="small" @follow="handleFollow" @unfollow="handleUnfollow"
         @click.stop />
     </div>
@@ -153,12 +154,20 @@ function getFollowingText(userInfo) {
   return '已关注'
 }
 
+function handleAvatarError(event) {
+  import('@/assets/imgs/avatar.png').then(module => {
+    event.target.src = module.default
+  })
+}
+
 // 监听用户信息变化，初始化关注状态
 watch(() => props.userInfo, (newUserInfo) => {
   if (newUserInfo && newUserInfo.id) {
     // 初始化关注状态到 store
+    // 确保使用正确的用户ID（小石榴号）
+    const userId = newUserInfo.user_id || newUserInfo.userId || newUserInfo.id
     followStore.initUserFollowState(
-      newUserInfo.id,
+      userId,
       newUserInfo.isFollowing || false,
       newUserInfo.isMutual || false,
       newUserInfo.buttonType || (newUserInfo.isFollowing ? 'unfollow' : 'follow')

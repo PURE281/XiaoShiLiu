@@ -89,7 +89,8 @@
             </td>
             <td v-for="column in columns" :key="column.key">
               <span v-if="column.type === 'image' && item[column.key]">
-                <img :src="item[column.key]" alt="图片" class="table-image" @click="showImageModal(item[column.key])" />
+                <img :src="item[column.key]" alt="图片" class="table-image" @click="showImageModal(item[column.key])"
+                  @error="handleImageError" />
               </span>
               <span v-else-if="column.type === 'image-gallery'">
                 <span v-if="loadingGallery === item.id" class="loading-text">
@@ -263,7 +264,8 @@ const props = defineProps({
 // 确认弹框
 const { confirmState, handleConfirm, handleCancel, confirmDelete, showError } = useConfirm()
 
-
+// 默认头像
+const defaultAvatar = new URL('@/assets/imgs/avatar.png', import.meta.url).href
 
 // 获取认证头
 const getAuthHeaders = () => {
@@ -1020,6 +1022,11 @@ const batchDelete = async () => {
     // 用户取消删除，不做任何操作
   }
 }
+
+// 处理图片加载失败
+const handleImageError = (event) => {
+  event.target.src = defaultAvatar
+}
 </script>
 
 <style scoped>
@@ -1204,8 +1211,10 @@ const batchDelete = async () => {
   padding: 12px 15px;
   text-align: left;
   border-bottom: 1px solid var(--border-color-primary);
-  word-wrap: break-word;
+  word-wrap: break-word; 
+  word-break: break-all;
   vertical-align: top;
+  white-space: normal;
 }
 
 .data-table th {
@@ -1425,6 +1434,11 @@ const batchDelete = async () => {
   cursor: pointer;
   text-decoration: underline;
   transition: color 0.2s;
+  display: inline-block;
+  max-width: 80px;
+  word-wrap: break-word;
+  word-break: break-all;
+  line-height: 1.4;
 }
 
 .truncated-content:hover,

@@ -76,7 +76,7 @@ router.get('/', optionalAuth, async (req, res) => {
 
       // 搜索笔记
       const [postRows] = await pool.execute(
-        `SELECT p.*, u.nickname, u.avatar as user_avatar, u.user_id, u.location
+        `SELECT p.*, u.nickname, u.avatar as user_avatar, u.user_id as author_account, u.location
          FROM posts p
          LEFT JOIN users u ON p.user_id = u.id
          ${whereClause}
@@ -141,7 +141,7 @@ router.get('/', optionalAuth, async (req, res) => {
            LEFT JOIN users u ON p.user_id = u.id
            ${keywordWhereClause}
            GROUP BY t.id, t.name
-           ORDER BY count DESC
+           ORDER BY t.name ASC
            LIMIT 10`,
           keywordParams
         );
