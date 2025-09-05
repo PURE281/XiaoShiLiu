@@ -130,8 +130,8 @@ router.get('/', optionalAuth, async (req, res) => {
       queryParams = [isDraft.toString(), ...additionalParams, limit.toString(), offset.toString()];
     }
 
-    console.log('SQL Query:', query);
-    console.log('Query Params:', queryParams);
+    // console.log('SQL Query:', query);
+    // console.log('Query Params:', queryParams);
     const [rows] = await pool.execute(query, queryParams);
     
 

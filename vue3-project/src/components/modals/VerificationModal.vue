@@ -9,42 +9,57 @@
           </svg>
         </button>
       </div>
-      
+
       <div class="modal-body">
         <div class="verification-form">
           <p class="verification-description">
             完成以下问卷，达到60分及以上即可获得认证标识。
           </p>
-          
-          <!-- 问卷题目 -->
-          <div class="question-item" v-for="(question, index) in questions" :key="index">
-            <h4 class="question-text">{{ index + 1 }}. {{ question.text }}</h4>
-            <div class="answer-options">
-              <label class="answer-option" v-for="(option, optionIndex) in question.options" :key="optionIndex">
-                <input 
-                  type="radio" 
-                  :name="`question-${index}`" 
-                  :value="optionIndex" 
-                  v-model="answers[index]"
-                  class="answer-input"
-                />
-                <span class="option-text">{{ option }}</span>
-              </label>
-            </div>
+
+          <!-- 加载状态 -->
+          <div v-if="loading" class="loading-state">
+            <div class="spinner"></div>
+            <p>加载问题中...</p>
           </div>
-          
+
+          <!-- 错误提示 -->
+          <div v-if="error" class="error-state">
+            <p class="error-message">{{ error }}</p>
+            <button @click="loadQuestions" class="retry-button">重试</button>
+          </div>
+
+          <!-- 问卷题目 -->
+          <div v-else class="questions-container">
+            <div class="question-item" v-for="(question, index) in questions" :key="index">
+              <h4 class="question-text">{{ (currentPage - 1) * 5 + index + 1 }}. {{ question.question_text }}</h4>
+              <div class="answer-options">
+                <label class="answer-option" v-for="(option, optionIndex) in Object.values(question.options || {})"
+                  :key="optionIndex">
+                  <input type="radio" :name="`question-${index}`" :value="String.fromCharCode(65 + optionIndex)"
+                    v-model="answers[currentPage][index]" class="answer-input" />
+                  <span class="option-text">{{ String.fromCharCode(65 + optionIndex) }}. {{ option }}</span>
+                </label>
+              </div>
+            </div>
+
+          </div>
+
+
+
           <!-- 认证结果 -->
           <div v-if="showResult" class="verification-result">
             <div v-if="isPassed" class="result-passed">
               <svg width="60" height="60" viewBox="0 0 24 24" fill="#4CAF50" class="success-icon">
-                <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round" />
               </svg>
               <h4>认证成功！</h4>
               <p>恭喜您获得{{ score }}分，已通过认证。</p>
             </div>
             <div v-else class="result-failed">
               <svg width="60" height="60" viewBox="0 0 24 24" fill="#f44336" class="error-icon">
-                <line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
               </svg>
               <h4>认证未通过</h4>
               <p>您获得了{{ score }}分，需要达到60分才能通过认证。</p>
@@ -53,23 +68,29 @@
           </div>
         </div>
       </div>
-      
+
       <div class="modal-footer">
-        <button 
-          class="submit-button" 
-          @click="handleSubmit" 
-          :disabled="isSubmitting || showResult || !isFormComplete"
-        >
+        <!-- 分页控件 -->
+      <div class="pagination-controls">
+        <button @click="previousPage" :disabled="currentPage === 1 || loading">上一页</button>
+        <span class="page-info">第 {{ currentPage }} 页 / 共 {{ totalPages }} 页</span>
+        <button @click="nextPage" :disabled="currentPage*5 >= totalPages || loading">下一页</button>
+      </div>
+        <button class="submit-button" @click="handleSubmit"
+          :disabled="isSubmitting || showResult || !isAllPagesComplete">
           {{ isSubmitting ? '提交中...' : '提交' }}
         </button>
       </div>
+      
     </div>
   </div>
+
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useUserStore } from '@/stores/user'
+import { getSurveyQuestions, submitSurveyAnswers } from '@/api/questions'
 
 const props = defineProps({
   // 这个组件通过v-if控制显示，所以不需要额外的isOpen prop
@@ -79,45 +100,93 @@ const emit = defineEmits(['close', 'success'])
 
 const userStore = useUserStore()
 
-// 问卷题目（模拟数据）
-const questions = ref([
-  {
-    text: '您如何描述自己使用本平台的频率？',
-    options: ['偶尔使用', '每周几次', '每天都用', '经常使用并积极参与讨论']
-  },
-  {
-    text: '您在本平台主要进行哪些活动？',
-    options: ['浏览内容', '发布内容', '评论互动', '关注其他用户']
-  },
-  {
-    text: '您是否愿意在个人资料中提供真实信息？',
-    options: ['不愿意', '可以提供部分信息', '愿意提供基本信息', '愿意提供详细信息']
-  },
-  {
-    text: '您对平台社区规范的了解程度？',
-    options: ['不了解', '了解一点', '基本了解', '非常了解']
-  },
-  {
-    text: '您认为自己对平台社区的贡献度如何？',
-    options: ['几乎没有', '一般', '较有贡献', '贡献很大']
-  }
-])
+// 分页相关状态
+const currentPage = ref(1);
+const totalPages = ref(0);
+const questionsByPage = ref({}); // 按页存储所有问题
+const questions = computed(() => questionsByPage.value[currentPage.value] || []);
+const loading = ref(false);
+const error = ref(null);
 
-// 用户答案
-const answers = ref(new Array(questions.value.length).fill(null))
+// 从API加载问题
+// 上一页
+const previousPage = () => {
+  if (currentPage.value > 1) {
+    currentPage.value--;
+  }
+};
+
+// 下一页
+const nextPage = () => {
+  console.log(currentPage.value);
+  if (currentPage.value*5 < totalPages.value) {
+    currentPage.value++;
+    loadQuestions();
+  }
+};
+
+const loadQuestions = async () => {
+  // 如果已经加载过该页问题，直接返回
+  if (questionsByPage.value[currentPage.value]) {
+    return;
+  }
+
+  loading.value = true;
+  error.value = null;
+
+  let pageQuestions = [];
+  try {
+    const response = await getSurveyQuestions(currentPage.value, 5);
+    // 解析选项JSON并处理数据
+    pageQuestions = (response.data || []).map(q => ({
+      ...q,
+      options: q.options || {}
+    }));
+    questionsByPage.value[currentPage.value] = pageQuestions;
+    totalPages.value = response.pagination?.total || 0;
+
+    // 初始化当前页答案数组
+    if (!answers.value[currentPage.value]) {
+      answers.value[currentPage.value] = new Array(questions.value.length).fill(null);
+    }
+  } catch (err) {
+    error.value = '加载问题失败，请重试';
+    console.error('Failed to load questions:', err);
+  } finally {
+    loading.value = false;
+  }
+};
+
+// 监听当前页变化加载问题
+watch(currentPage, loadQuestions);
+
+// 用户答案 - 按页存储
+const answers = ref({})
 const isSubmitting = ref(false)
 const showResult = ref(false)
 const score = ref(0)
 const isPassed = ref(false)
 
-// 检查表单是否完整
-const isFormComplete = computed(() => {
-  return answers.value.every(answer => answer !== null)
+// 检查当前页表单是否完整
+const isCurrentPageComplete = computed(() => {
+  const pageAnswers = answers.value[currentPage.value] || [];
+  return pageAnswers.length > 0 && pageAnswers.every(answer => answer !== null);
 })
+
+// 检查所有页面是否完成
+const isAllPagesComplete = computed(() => {
+  for (let i = 1; i <= totalPages.value; i++) {
+    const pageAnswers = answers.value[i] || [];
+    if (pageAnswers.length === 0 || pageAnswers.some(answer => answer === null)) {
+      return false;
+    }
+  }
+  return totalPages.value > 0;
+})
+
 
 // 处理关闭模态框
 const handleClose = () => {
-  console.log(321)
   emit('close')
   if (!isSubmitting) {
     console.log('触发close事件')
@@ -125,87 +194,140 @@ const handleClose = () => {
   }
 }
 
-// 计算分数（模拟逻辑）
+// 计算分数（整合所有页面答案）
 const calculateScore = () => {
-  let totalScore = 0
-  
-  answers.value.forEach((answer, index) => {
-    // 每个选项对应不同的分数
-    // 选项索引越大，分数越高
-    switch (answer) {
-      case 0:
-        totalScore += 10
-        break
-      case 1:
-        totalScore += 15
-        break
-      case 2:
-        totalScore += 20
-        break
-      case 3:
-        totalScore += 25
-        break
+  let totalScore = 0;
+  const allAnswers = [];
+
+  // 收集所有页面的答案
+  for (let i = 1; i <= totalPages.value; i++) {
+    if (answers.value[i]) {
+      allAnswers.push(...answers.value[i]);
     }
-  })
-  
-  // 增加一些随机因素，让分数更真实
-  const randomAdjustment = Math.floor(Math.random() * 10) - 5
-  totalScore = Math.max(0, Math.min(100, totalScore + randomAdjustment))
-  
-  return totalScore
+  }
+
+  // 根据正确答案计算分数
+  allAnswers.forEach((answer, index) => {
+    // 查找对应的问题
+    let question = null;
+    // 遍历所有页面查找匹配的问题
+    Object.values(questionsByPage.value).forEach(pageQuestions => {
+      const found = pageQuestions.find(q => q.index === index);
+      if (found) question = found;
+    });
+
+    if (question && answer === question.answer) {
+      totalScore += 100 / allAnswers.length; // 平均分
+    }
+  });
+
+  return totalScore;
 }
 
 // 处理提交问卷
+// 提交表单
 const handleSubmit = async () => {
-  if (!isFormComplete.value || isSubmitting.value || showResult.value) {
-    return
-  }
-  
+  if (!isAllPagesComplete.value) return;
+
+  isSubmitting.value = true;
   try {
-    isSubmitting.value = true
-    
-    // 模拟API请求延迟
-    await new Promise(resolve => setTimeout(resolve, 1500))
-    
-    // 计算分数
-    score.value = calculateScore()
-    isPassed.value = score.value >= 60
-    showResult.value = true
-    
-    // 如果通过认证，更新用户状态
+    // 收集所有答案数据
+    const submissionData = [];
+
+    // 遍历所有页面
+    Object.keys(questionsByPage.value).forEach(page => {
+      const pageQuestions = questionsByPage.value[page];
+      const pageAnswers = answers.value[page] || [];
+
+      // 遍历当前页问题
+      pageQuestions.forEach((question, index) => {
+        const userAnswer = pageAnswers[index];
+        if (userAnswer !== null) {
+          submissionData.push({
+            questionId: question.id,
+            userAnswer: userAnswer
+          });
+        }
+      });
+    });
+
+    // 调用API提交答案
+    await submitSurveyAnswers(submissionData);
+
+    // 计算分数并显示结果
+    score.value = calculateScore();
+    isPassed.value = score.value >= 60;
+    showResult.value = true;
+
     if (isPassed.value) {
-      await userStore.submitVerificationSurvey({ 
-        answers: answers.value, 
-        score: score.value 
-      })
-      emit('success')
-      isSubmitting.value = true
-      // 认证成功后显示结果2秒，然后自动关闭模态框
+      emit('success');
       setTimeout(() => {
-        handleClose()
-      }, 2000)
+        handleClose();
+      }, 2000);
     }
   } catch (error) {
-    console.error('提交认证问卷失败:', error)
-    // 这里可以添加错误提示
+    console.error('提交失败:', error);
+    alert('提交失败，请重试');
   } finally {
-    isSubmitting.value = false
+    isSubmitting.value = false;
   }
 }
 
 // 重置表单
 const resetForm = () => {
-  answers.value = new Array(questions.value.length).fill(null)
-  showResult.value = false
-  score.value = 0
-  isPassed.value = false
+  currentPage.value = 1;
+  answers.value = {};
+  showResult.value = false;
+  score.value = 0;
+  isPassed.value = false;
+  loadQuestions();
 }
 
-// 当组件挂载时重置表单
+// 当组件挂载时加载第一页问题
 onMounted(() => {
-  resetForm()
+  loadQuestions()
 })
 </script>
+
+<style scoped>
+.pagination-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  padding-top: 1rem;
+  /* border-top: 1px solid #e5e7eb; */
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.pagination-controls button {
+  padding: 0.5rem 1rem;
+  border: 1px solid #4f46e5;
+  border-radius: 4px;
+  background-color: #4f46e5;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pagination-controls button:disabled {
+  background-color: #9ca3af;
+  border-color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.pagination-controls button:not(:disabled):hover {
+  background-color: #4338ca;
+}
+
+.page-info {
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+</style>
 
 <style scoped>
 .modal-overlay {
@@ -317,18 +439,21 @@ onMounted(() => {
   padding: 30px 0;
 }
 
-.result-passed, .result-failed {
+.result-passed,
+.result-failed {
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
-.result-passed h4, .result-failed h4 {
+.result-passed h4,
+.result-failed h4 {
   margin: 16px 0 8px;
   font-size: 20px;
 }
 
-.result-passed p, .result-failed p {
+.result-passed p,
+.result-failed p {
   color: var(--text-color-secondary);
   margin-bottom: 16px;
 }

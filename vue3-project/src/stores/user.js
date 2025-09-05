@@ -10,7 +10,7 @@ export const useUserStore = defineStore('user', () => {
   const isLoading = ref(false)
   const showVerificationModal = ref(false)
   const verificationScore = ref(0)
-  const isVerified = ref(true)
+  const isVerified = ref(false)
 
   // 计算属性
   const isLoggedIn = computed(() => {
@@ -28,17 +28,11 @@ export const useUserStore = defineStore('user', () => {
         token.value = response.data.tokens.access_token
         refreshToken.value = response.data.tokens.refresh_token
         userInfo.value = response.data.user
-        console.log(response.data)
         // 保存到localStorage
         localStorage.setItem('token', response.data.tokens.access_token)
         localStorage.setItem('refreshToken', response.data.tokens.refresh_token)
         localStorage.setItem('userInfo', JSON.stringify(response.data.user))
-        localStorage.setItem('isVerified', response.data.tokens.isVerified)
-        localStorage.setItem('verificationScore', verificationScore.value.toString())
-
-        // Token已保存到localStorage
-
-        return { success: true }
+        return { success: false }
       } else {
         return {
           success: false,

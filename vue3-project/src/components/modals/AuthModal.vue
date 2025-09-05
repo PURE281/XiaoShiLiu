@@ -42,8 +42,8 @@
           <div v-if="!isLoginMode" class="form-group">
             <label for="confirmPassword" class="form-label">确认密码</label>
             <input type="password" id="confirmPassword" v-model="formData.confirmPassword" class="form-input"
-              :class="{ 'error': showErrors && errors.confirmPassword }" placeholder="请再次输入密码"
-              maxlength="20" @input="clearError('confirmPassword')" />
+              :class="{ 'error': showErrors && errors.confirmPassword }" placeholder="请再次输入密码" maxlength="20"
+              @input="clearError('confirmPassword')" />
             <span v-if="showErrors && errors.confirmPassword" class="error-message">{{ errors.confirmPassword }}</span>
           </div>
 
@@ -266,7 +266,10 @@ const handleSubmit = async () => {
       setTimeout(() => {
         emit('success')
         closeModal()
-        window.location.reload()
+        // 注册成功不刷新页面，让认证模态框正常显示
+        if (isLoginMode.value) {
+          window.location.reload()
+        }
       }, 1000)
     } else {
       unifiedMessage.value = result.message

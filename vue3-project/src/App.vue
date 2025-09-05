@@ -8,6 +8,7 @@ import { useChangePasswordStore } from '@/stores/changePassword'
 import AuthModal from '@/components/modals/AuthModal.vue'
 import AboutModal from '@/components/modals/AboutModal.vue'
 import ChangePasswordModal from '@/components/modals/ChangePasswordModal.vue'
+import VerificationModal from '@/components/modals/VerificationModal.vue'
 
 const userStore = useUserStore()
 const authStore = useAuthStore()
@@ -29,6 +30,7 @@ onMounted(() => {
     <ChangePasswordModal v-if="changePasswordStore.showChangePasswordModal" 
       :userInfo="userStore.userInfo"
       @close="changePasswordStore.closeChangePasswordModal" />
+    <VerificationModal v-if="userStore.showVerificationModal" @close="userStore.closeVerificationModal" @success="userStore.closeVerificationModal" />
   </div>
 </template>
 

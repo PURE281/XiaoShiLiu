@@ -21,6 +21,7 @@ const commentsRoutes = require('./routes/comments');
 const likesRoutes = require('./routes/likes');
 const tagsRoutes = require('./routes/tags');
 const searchRoutes = require('./routes/search');
+const surveysRoutes = require('./routes/surveys');
 const notificationsRoutes = require('./routes/notifications');
 const uploadRoutes = require('./routes/upload');
 const statsRoutes = require('./routes/stats');

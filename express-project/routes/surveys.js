@@ -5,19 +5,65 @@ const { authenticateToken } = require('../middleware/auth');
 const { success, error, handleError } = require('../utils/responseHelper');
 const { getRecords, createRecord, updateRecord } = require('../utils/dbHelper');
 
+// 更新问卷问题
+router.put('/questions/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    // 从请求体中提取允许更新的字段，排除created_at
+    const { created_at,updated_at, ...updateData } = req.body;
+
+    // 验证必填字段
+    if (!updateData.question_text || !updateData.question_type) {
+      return error(res, '问题内容和类型为必填项', 400, 400);
+    }
+
+    // 处理选项字段（如果提供）
+    if (updateData.options) {
+      updateData.options = JSON.stringify(updateData.options);
+    }
+
+    // 更新记录
+    const affectedRows = await updateRecord('survey_questions', id, {
+      ...updateData
+    });
+
+    if (affectedRows === 0) {
+      return error(res, '问题不存在', 404, 404);
+    }
+
+    success(res, { message: '问题更新成功' }, '更新问卷问题成功');
+  } catch (err) {
+    handleError(err, res, '更新问卷问题');
+  }
+});
+
 // 获取问卷问题列表（分页）
 router.get('/questions', authenticateToken, async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     
+    // 获取总数
+    const [countResult] = await pool.execute('SELECT COUNT(*) AS total FROM survey_questions');
+    const total = countResult[0].total;
+    const pages = Math.ceil(total / limit);
+    
+    // 获取分页数据
     const questions = await getRecords('survey_questions', {
       page,
-      limit,
+      limit:limit,
       orderBy: 'sort_order ASC'
     });
     
-    success(res, questions, '获取问卷问题成功');
+    success(res, {
+      data: questions.data,
+      pagination: {
+        total,
+        page,
+        limit,
+        pages
+      }
+    }, '获取问卷问题成功');
   } catch (err) {
     handleError(err, res, '获取问卷问题');
   }

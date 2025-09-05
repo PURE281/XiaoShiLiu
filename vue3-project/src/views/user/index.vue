@@ -16,7 +16,6 @@ import BackToTopButton from '@/components/BackToTopButton.vue'
 const router = useRouter()
 const navigationStore = useNavigationStore()
 const userStore = useUserStore()
-
 const defaultAvatar = new URL('@/assets/imgs/avatar.png', import.meta.url).href
 
 // 用户统计信息
@@ -317,6 +316,10 @@ function handleCollect(data) {
         <div class="edit-profile-button-wrapper">
           <button class="edit-profile-btn" @click="openEditProfileModal">
             编辑资料
+          </button>
+          <button v-if="!userStore.isVerified===1" class="verify-btn" @click="startVerification">
+            开始认证{{userStore.userInfo}}
+
           </button>
         </div>
       </div>

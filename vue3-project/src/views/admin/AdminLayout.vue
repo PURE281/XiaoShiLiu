@@ -268,6 +268,7 @@ const menuItems = [
   { path: '/admin/follows', title: '关注管理', icon: 'follow' },
   { path: '/admin/notifications', title: '通知管理', icon: 'notification' },
   { path: '/admin/sessions', title: '会话管理', icon: 'setting' },
+  { path: '/admin/question', title: '问卷管理', icon: 'setting' },
   { path: '/admin/admins', title: '管理员管理', icon: 'user' }
 ]
 
@@ -291,6 +292,7 @@ const currentPageDescription = computed(() => {
     '/admin/follows': '管理用户关注关系',
     '/admin/notifications': '管理系统通知消息',
     '/admin/sessions': '管理用户登录会话',
+    '/admin/survey': '管理问卷',
     '/admin/admins': '管理系统管理员账号'
   }
   return descriptions[route.path]
