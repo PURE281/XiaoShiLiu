@@ -20,7 +20,7 @@
           <div class="intro-section">
             <h3>项目简介</h3>
             <p>
-              小石榴校园图文社区是一个面向开发者与学习者的开源示例项目，旨在提供从前端到后端的完整实践范本，帮助大家学习现代 Web 应用的架构设计、工程化与业务实现。
+              聚包盆是一个面向R.E.D团粉社群的项目。
             </p>
           </div>
           <div class="author-section">
@@ -35,39 +35,6 @@
               </div>
             </a>
           </div>
-          <div class="features-section">
-            <h3>项目亮点</h3>
-            <ul class="features-list">
-              <li><strong>前端：</strong>Vue 3+Vite+Pinia+Vue Router</li>
-              <li><strong>后端：</strong>Node.js/Express+MySQL</li>
-              <li><strong>工程化：</strong>环境配置、代码规范、构建与产物优化的完整流程</li>
-              <li><strong>业务能力：</strong>鉴权流程、路由守卫、状态管理与接口封装</li>
-              <li><strong>体验优化：</strong>骨架屏、懒加载、预加载、无障碍与响应式适配</li>
-              <li><strong>组件与分层：</strong>可复用组件拆分、按领域分组与别名引入</li>
-              <li><strong>后台管理：</strong>基础CRUD、数据管理与配置面板，支持后续扩展权限与统计</li>
-              <li><strong>第三方库：</strong>VueUse、Cropper.js、vue3-emoji-picker 等的集成与实践</li>
-            </ul>
-          </div>
-
-          <div class="api-section">
-            <h3>接口服务</h3>
-            <div class="api-content">
-              <p>
-                <strong>图片存储：</strong>灌装的示例图片来自 <a href="https://t.alcy.cc/" target="_blank" class="api-link"><img
-                    :src="liciUrl" alt="栗次元" class="api-icon">栗次元图床</a>，提供稳定的图片存储服务。
-              </p>
-              <p>
-                <strong>图片上传：</strong>用户上传图片使用了 <a href="https://api.aa1.cn/doc/xinyew_jdtc.html" target="_blank"
-                  class="api-link"><img :src="xiaRouUrl" alt="夏柔" class="api-icon">夏柔API</a>，确保图片上传的稳定性和速度。
-              </p>
-              <p>
-                <strong>属地查询：</strong>IP属地查询服务使用 <a href="https://api.pearktrue.cn/dashboard/detail/290" target="_blank"
-                  class="api-link"><img :src="baoLuoUrl" alt="保罗" class="api-icon">保罗API</a>，实现精准的IP属地定位功能。
-              </p>
-            </div>
-          </div>
-
-
 
           <div class="privacy-section">
             <h3>隐私声明</h3>
@@ -103,7 +70,7 @@
           </div>
 
           <div class="about-footer">
-            <p>&copy; 2025 小石榴校园图文社区. Made with ❤️ by @ZTMYO</p>
+            <p>&copy; 2025 聚包盆. Made with ❤️ by @PURE81</p>
           </div>
         </div>
       </div>
@@ -121,8 +88,8 @@ const emit = defineEmits(['close'])
 const { lock, unlock } = useScrollLock()
 
 // 静态资源URL
-const logoUrl = new URL('@/assets/imgs/logo.ico', import.meta.url).href
-const ztmyoUrl = new URL('@/assets/imgs/ztmyo.png', import.meta.url).href
+const logoUrl = new URL('@/assets/imgs/logo.gif', import.meta.url).href
+const ztmyoUrl = new URL('@/assets/imgs/logo.ico', import.meta.url).href
 const liciUrl = new URL('@/assets/imgs/栗次元.ico', import.meta.url).href
 const xiaRouUrl = new URL('@/assets/imgs/夏柔.ico', import.meta.url).href
 const baoLuoUrl = new URL('@/assets/imgs/保罗.ico', import.meta.url).href

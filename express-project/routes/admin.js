@@ -2,13 +2,15 @@ const express = require('express')
 const router = express.Router()
 const { pool } = require('../config/database')
 const { createCrudHandlers } = require('../middleware/crudFactory')
-const { recordExists } = require('../utils/dbHelper')
+const { recordExists, getRecords } = require('../utils/dbHelper')
 const { adminAuth, uploadBase64ToImageHost } = require('../utils/uploadHelper')
 const {
   validateLikeOrFavoriteData,
   validateFollowData,
   validateNotificationData
 } = require('../utils/validationHelpers')
+const { success, error, handleError } = require('../utils/responseHelper')
+const { authenticateToken } = require('../middleware/auth')
 
 // 创建笔记
 // Posts CRUD 配置
@@ -458,7 +460,7 @@ const postsCrudConfig = {
         params.push(req.query.category)
       }
 
-      if (req.query.is_draft !== undefined && req.query.is_draft !== '') {
+      if (req.query.is_draft !== undefined) {
         whereClause += whereClause ? ' AND p.is_draft = ?' : ' WHERE p.is_draft = ?'
         params.push(req.query.is_draft)
       }
@@ -1554,6 +1556,152 @@ const adminsCrudConfig = {
 }
 
 const adminsHandlers = createCrudHandlers(adminsCrudConfig)
+
+// 问卷问题CRUD配置
+const surveyQuestionsCrudConfig = {
+  table: 'survey_questions',
+  name: '问卷问题',
+  requiredFields: ['question_text', 'question_type', 'options', 'sort_order'],
+  updateFields: ['question_text', 'question_type', 'options', 'sort_order', 'is_required'],
+  searchFields: {
+    question_text: { operator: 'LIKE' },
+    question_type: { operator: '=' },
+    is_required: { operator: '=' }
+  },
+  allowedSortFields: ['id', 'sort_order', 'created_at'],
+  defaultOrderBy: 'sort_order ASC',
+  
+  // 创建前的自定义处理
+  beforeCreate: async (data, req) => {
+    // 确保options是JSON格式
+    if (data.options && typeof data.options === 'object') {
+      data.options = JSON.stringify(data.options);
+    }
+    // 设置默认值
+    if (data.is_required === undefined) {
+      data.is_required = 0;
+    }
+    return data;
+  },
+  
+  // 更新前的自定义处理
+  beforeUpdate: async (data, req) => {
+    // 确保options是JSON格式
+    if (data.options && typeof data.options === 'object') {
+      data.options = JSON.stringify(data.options);
+    }
+    return data;
+  }
+}
+
+const surveyQuestionsHandlers = createCrudHandlers(surveyQuestionsCrudConfig)
+
+// 问卷问题CRUD路由
+router.post('/survey-questions', authenticateToken, surveyQuestionsHandlers.create)
+router.put('/survey-questions/:id', authenticateToken, surveyQuestionsHandlers.update)
+router.delete('/survey-questions/:id', authenticateToken, surveyQuestionsHandlers.deleteOne)
+router.delete('/survey-questions', authenticateToken, surveyQuestionsHandlers.deleteMany)
+router.get('/survey-questions/:id', authenticateToken, surveyQuestionsHandlers.getOne)
+router.get('/survey-questions', authenticateToken, surveyQuestionsHandlers.getList)
+
+// 问卷回答记录管理（前端使用的/surveys接口）
+router.get('/surveys', authenticateToken, async (req, res) => {
+  try {
+    const { page = 1, limit = 20, title, status, user_id } = req.query;
+    
+    let where = '';
+    const params = [];
+    
+    
+    
+    // 如果有title参数，可能需要关联查询问卷问题
+    if (title) {
+      // 这里只是简单处理，实际可能需要根据业务需求进行调整
+      console.log('Title filter:', title);
+    }
+    
+    const responses = await getRecords('survey_questions', {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      where,
+      params,
+      orderBy: 'created_at DESC'
+    });
+    
+    success(res, responses, '获取问卷回答记录成功');
+  } catch (err) {
+    handleError(err, res, '获取问卷回答记录');
+  }
+});
+
+
+// 获取管理员菜单
+const getAdminMenu = async (req, res) => {
+  try {
+    const menu = [
+      {
+        id: 'dashboard',
+        name: '仪表盘',
+        path: '/dashboard',
+        icon: 'dashboard'
+      },
+      {
+        id: 'users',
+        name: '用户管理',
+        path: '/users',
+        icon: 'users'
+      },
+      {
+        id: 'posts',
+        name: '笔记管理',
+        path: '/posts',
+        icon: 'file-text'
+      },
+      {
+        id: 'comments',
+        name: '评论管理',
+        path: '/comments',
+        icon: 'comment'
+      },
+      {
+        id: 'notifications',
+        name: '通知管理',
+        path: '/notifications',
+        icon: 'bell'
+      },
+      {
+        id: 'surveys',
+        name: '问卷管理',
+        path: '/surveys',
+        icon: 'list-alt',
+        children: [
+          {
+            id: 'survey-questions',
+            name: '问卷问题管理',
+            path: '/survey-questions'
+          },
+          {
+            id: 'survey-responses',
+            name: '问卷回答记录',
+            path: '/survey-responses'
+          }
+        ]
+      },
+      {
+        id: 'admins',
+        name: '管理员管理',
+        path: '/admins',
+        icon: 'shield'
+      }
+    ];
+    
+    success(res, menu, '获取管理员菜单成功');
+  } catch (err) {
+    handleError(err, res, '获取管理员菜单');
+  }
+}
+
+router.get('/menu', authenticateToken, getAdminMenu);
 
 // 管理员CRUD路由
 router.post('/admins', adminAuth, adminsHandlers.create)

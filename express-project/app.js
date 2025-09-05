@@ -26,6 +26,7 @@ const notificationsRoutes = require('./routes/notifications');
 const uploadRoutes = require('./routes/upload');
 const statsRoutes = require('./routes/stats');
 const adminRoutes = require('./routes/admin');
+const surveysRoutes = require('./routes/surveys');
 
 const app = express();
 
@@ -68,7 +69,8 @@ app.use('/api/search', searchRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/stats', statsRoutes);
-app.use('/api/admin', adminRoutes); 
+app.use('/api/admin', adminRoutes);
+app.use('/api/surveys', surveysRoutes); 
 
 // 错误处理中间件
 app.use((err, req, res, next) => {
