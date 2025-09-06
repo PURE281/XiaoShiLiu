@@ -279,7 +279,7 @@ router.get('/me', authenticateToken, async (req, res) => {
     const userId = req.user.id;
 
     const [userRows] = await pool.execute(
-      'SELECT id, user_id, nickname, avatar, bio, location, follow_count, fans_count, like_count, is_active, created_at, gender, zodiac_sign, mbti, education, major, interests FROM users WHERE id = ?',
+      'SELECT id, user_id, nickname, avatar, bio, location,isVerified, follow_count, fans_count, like_count, is_active, created_at, gender, zodiac_sign, mbti, education, major, interests FROM users WHERE id = ?',
       [userId.toString()]
     );
 

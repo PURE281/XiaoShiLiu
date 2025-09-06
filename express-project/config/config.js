@@ -26,7 +26,7 @@ module.exports = {
   database: {
     host: process.env.DB_HOST || 'localhost',
     user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || '52boncest',
+    password: process.env.DB_PASSWORD || 'MEVqTaP9XAzqR9!@1',
     database: process.env.DB_NAME || 'xiaoshiliu_community',
     port: process.env.DB_PORT || 3306,
     charset: 'utf8mb4'
