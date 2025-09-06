@@ -121,7 +121,7 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ code: 400, message: '验证码已过期' });
     }
 
-    if (captchaText !== storedCaptcha.text) {
+    if (captchaText.toLowerCase() !== storedCaptcha.text.toLowerCase()) {
       return res.status(400).json({ code: 400, message: '验证码错误' });
     }
 

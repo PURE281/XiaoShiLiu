@@ -175,13 +175,24 @@ const isCurrentPageComplete = computed(() => {
 
 // 检查所有页面是否完成
 const isAllPagesComplete = computed(() => {
-  for (let i = 1; i <= totalPages.value; i++) {
-    const pageAnswers = answers.value[i] || [];
-    if (pageAnswers.length === 0 || pageAnswers.some(answer => answer === null)) {
+  // 如果没有问题，返回false
+  if (totalPages.value === 0) {
+    return false;
+  }
+  
+  // 遍历所有已加载的页面
+  for (const page of Object.keys(questionsByPage.value)) {
+    const pageNum = parseInt(page);
+    const pageAnswers = answers.value[pageNum] || [];
+    const pageQuestions = questionsByPage.value[pageNum] || [];
+    
+    // 检查当前页是否有答案，且答案数量与问题数量匹配
+    if (pageAnswers.length !== pageQuestions.length || pageAnswers.some(answer => answer === null)) {
       return false;
     }
   }
-  return totalPages.value > 0;
+  
+  return true;
 })
 
 
@@ -484,19 +495,36 @@ onMounted(() => {
   background-color: var(--primary-color);
   color: white;
   border: none;
-  padding: 10px 20px;
-  border-radius: 6px;
+  padding: 12px 28px;
+  border-radius: 8px;
   cursor: pointer;
-  font-size: 14px;
-  transition: background-color 0.2s ease;
+  font-size: 15px;
+  font-weight: 500;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  outline: none;
 }
 
 .submit-button:hover:not(:disabled) {
   background-color: var(--primary-color-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+}
+
+.submit-button:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(79, 70, 229, 0.2);
+}
+
+.submit-button:focus-visible {
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
 }
 
 .submit-button:disabled {
   background-color: var(--bg-color-disabled);
   cursor: not-allowed;
+  opacity: 0.7;
+  transform: none;
+  box-shadow: none;
 }
 </style>

@@ -21,7 +21,7 @@
         <div class="captcha-inputs">
           <input v-for="(char, index) in captchaInputs" :key="index" type="text" :value="char"
             @input="handleInputChange($event, index)" @keydown="handleKeyDown($event, index)"
-            @paste="handlePaste($event, index)" @focus="handleFocus(index)" @click="handleClick(index)"
+            @paste="handlePaste($event, index)"
             class="captcha-input-box" maxlength="1" :ref="el => inputRefs[index] = el" />
         </div>
       </div>
