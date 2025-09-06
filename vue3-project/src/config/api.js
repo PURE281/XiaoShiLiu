@@ -1,7 +1,8 @@
 // API配置文件
 export const apiConfig = {
-  // 后端API基础URL
-  baseURL: '/api',
+  // 后端API基础URL - 从环境变量中读取
+  // baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
+  baseURL:  '/api',
 
   // 请求超时时间（毫秒）
   timeout: 60000, // 增加到60秒，适应多图片上传场景

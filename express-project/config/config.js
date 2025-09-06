@@ -24,9 +24,9 @@ module.exports = {
 
   // 数据库配置
   database: {
-    host: process.env.DB_HOST || 'localhost',
+    host: process.env.DB_HOST || '47.98.137.125',
     user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || '52boncest',
+    password: process.env.DB_PASSWORD || 'Lz29961867*',
     database: process.env.DB_NAME || 'xiaoshiliu_community',
     port: process.env.DB_PORT || 3306,
     charset: 'utf8mb4'
