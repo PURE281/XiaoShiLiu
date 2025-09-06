@@ -4,8 +4,8 @@
  * @author ZTMYO
  * @github https://github.com/ZTMYO
  * @description 基于Vue3+Vite+Pinia的现代化图文社区前端应用
- * @version 1.0.0
- * @license MIT
+ * @version 1.0.2
+ * @license GPLv3
  */
 
 import { createApp } from 'vue'

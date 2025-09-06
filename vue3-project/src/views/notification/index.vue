@@ -23,6 +23,8 @@ import { useNotificationStore } from '@/stores/notification'
 import { useThemeStore } from '@/stores/theme'
 import { useCommentLikeStore } from '@/stores/commentLike'
 import { formatTime } from '@/utils/timeFormat'
+import avatarPlaceholder from '@/assets/imgs/avatar.png'
+import imagePlaceholder from '@/assets/imgs/未加载.png'
 
 // Router实例
 const router = useRouter()
@@ -772,6 +774,21 @@ function cleanupLazyLoading() {
   }
 }
 
+// 图片加载错误处理函数
+const handleImageError = (event) => {
+  const imgElement = event.target
+  // 防止重复触发
+  if (imgElement.dataset.errorHandled) {
+    return
+  }
+  imgElement.dataset.errorHandled = 'true'
+  
+  // 根据图片类型选择不同的占位图
+  const isAvatar = imgElement.classList.contains('lazy-avatar')
+  imgElement.src = isAvatar ? avatarPlaceholder : imagePlaceholder
+  imgElement.alt = '图片加载失败'
+}
+
 // 处理浏览器后退/前进按钮
 const handlePopState = (event) => {
   if (event.state && event.state.showDetailCard && showDetailCard.value) {
@@ -1141,7 +1158,7 @@ watch(isLoggedIn, async (newValue, oldValue) => {
                 <div class="left-section">
                   <a class="user-avatar clickable-avatar" v-user-hover="getUserHoverConfig(item.id)"
                     @click="onUserClick(item.id, $event)">
-                    <img v-img-lazy="item.avatar" :alt="item.username" class="lazy-avatar" />
+                    <img v-img-lazy="item.avatar" :alt="item.username" class="lazy-avatar" @error="handleImageError" />
                   </a>
                   <div v-if="!item.isRead" class="unread-dot"></div>
                 </div>
@@ -1204,7 +1221,7 @@ watch(isLoggedIn, async (newValue, oldValue) => {
                     </div>
                   </div>
                   <div class="post-thumbnail">
-                    <img v-img-lazy="item.postImage" alt="笔记图片" class="lazy-image" />
+                    <img v-img-lazy="item.postImage" alt="笔记图片" class="lazy-image" @error="handleImageError" />
                   </div>
                 </div>
               </div>
@@ -1226,7 +1243,7 @@ watch(isLoggedIn, async (newValue, oldValue) => {
                 <div class="left-section">
                   <a class="user-avatar clickable-avatar" v-user-hover="getUserHoverConfig(item.id)"
                     @click="onUserClick(item.id, $event)">
-                    <img v-img-lazy="item.avatar" :alt="item.username" class="lazy-avatar" />
+                    <img v-img-lazy="item.avatar" :alt="item.username" class="lazy-avatar" @error="handleImageError" />
                   </a>
                   <div v-if="!item.isRead" class="unread-dot"></div>
                 </div>
@@ -1241,7 +1258,7 @@ watch(isLoggedIn, async (newValue, oldValue) => {
                     <div class="notification-text" @click.stop="onImageClick(item)">点击查看笔记详情</div>
                   </div>
                   <div class="post-thumbnail">
-                    <img v-img-lazy="item.postImage" alt="笔记图片" class="lazy-image" />
+                    <img v-img-lazy="item.postImage" alt="笔记图片" class="lazy-image" @error="handleImageError" />
                   </div>
                 </div>
               </div>
@@ -1264,7 +1281,7 @@ watch(isLoggedIn, async (newValue, oldValue) => {
                 <div class="left-section">
                   <a class="user-avatar clickable-avatar" v-user-hover="getUserHoverConfig(item.id)"
                     @click="onUserClick(item.id, $event)">
-                    <img v-img-lazy="item.avatar" :alt="item.username" class="lazy-avatar" />
+                    <img v-img-lazy="item.avatar" :alt="item.username" class="lazy-avatar" @error="handleImageError" />
                   </a>
                   <div v-if="!item.isRead" class="unread-dot"></div>
                 </div>
@@ -1279,7 +1296,7 @@ watch(isLoggedIn, async (newValue, oldValue) => {
                     <div class="notification-text" @click.stop="onImageClick(item)">点击查看笔记详情</div>
                   </div>
                   <div class="post-thumbnail">
-                    <img v-img-lazy="item.postImage" alt="笔记图片" class="lazy-image" />
+                    <img v-img-lazy="item.postImage" alt="笔记图片" class="lazy-image" @error="handleImageError" />
                   </div>
                 </div>
               </div>
@@ -1301,7 +1318,7 @@ watch(isLoggedIn, async (newValue, oldValue) => {
                 <div class="left-section">
                   <a class="user-avatar clickable-avatar" v-user-hover="getUserHoverConfig(item.id)"
                     @click="onUserClick(item.id, $event)">
-                    <img v-img-lazy="item.avatar" :alt="item.username" class="lazy-avatar" />
+                    <img v-img-lazy="item.avatar" :alt="item.username" class="lazy-avatar" @error="handleImageError" />
                   </a>
                   <div v-if="!item.isRead" class="unread-dot"></div>
                 </div>

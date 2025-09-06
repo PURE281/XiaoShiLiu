@@ -4,15 +4,129 @@ const { pool } = require('../config/database');
 const { generateAccessToken, generateRefreshToken, verifyToken } = require('../utils/jwt');
 const { authenticateToken } = require('../middleware/auth');
 const { getIPLocation, getRealIP } = require('../utils/ipLocation');
+const svgCaptcha = require('svg-captcha');
+const path = require('path');
+const fs = require('fs');
+
+// 存储验证码的临时对象
+const captchaStore = new Map();
+
+// 生成验证码
+router.get('/captcha', (req, res) => {
+  try {
+    // 字体文件路径
+    const fontDir = path.join(__dirname, '../../vue3-project/src/assets/fonts');
+    
+    // 自动读取字体文件夹中的所有.ttf文件
+    let fontFiles = [];
+    if (fs.existsSync(fontDir)) {
+      fontFiles = fs.readdirSync(fontDir).filter(file => file.endsWith('.ttf'));
+    }
+    
+    // 如果有字体文件，随机选择一个加载
+    if (fontFiles.length > 0) {
+      const randomFont = fontFiles[Math.floor(Math.random() * fontFiles.length)];
+      const fontPath = path.join(fontDir, randomFont);
+      svgCaptcha.loadFont(fontPath);
+    }
+
+    const captcha = svgCaptcha.create({
+      size: 4, // 验证码长度
+      ignoreChars: '0o1ilc', // 排除容易混淆的字符
+      noise: 4, // 干扰线条数
+      color: true, // 彩色验证码
+      fontSize:40,
+      background: `#${Math.floor(Math.random() * 16777215).toString(16)}`, // 随机颜色
+    });
+
+    // 生成唯一的captchaId
+    const captchaId = Date.now() + Math.random().toString(36).substr(2, 9);
+
+    // 存储验证码（半分钟过期）
+    captchaStore.set(captchaId, {
+      text: captcha.text, // 保持原始大小写
+      expires: Date.now() + 30 * 1000 // 半分钟过期
+    });
+
+    // 清理过期的验证码
+    for (const [key, value] of captchaStore.entries()) {
+      if (Date.now() > value.expires) {
+        captchaStore.delete(key);
+      }
+    }
+
+    res.json({
+      code: 200,
+      data: {
+        captchaId,
+        captchaSvg: captcha.data
+      },
+      message: '验证码生成成功'
+    });
+  } catch (error) {
+    console.error('生成验证码失败:', error);
+    res.status(500).json({ code: 500, message: '生成验证码失败' });
+  }
+});
+
+// 检查用户ID是否已存在
+router.get('/check-user-id', async (req, res) => {
+  try {
+    const { user_id } = req.query; // 前端传过来的小石榴号
+    if (!user_id) {
+      return res.status(400).json({ code: 400, message: '请输入小石榴号' });
+    }
+    // 查数据库是否已有该ID
+    const [existingUser] = await pool.execute(
+      'SELECT id FROM users WHERE user_id = ?',
+      [user_id.toString()]
+    );
+    // 存在返回false，不存在返回true（供前端判断是否可继续）
+    res.json({
+      code: 200,
+      data: { isUnique: existingUser.length === 0 },
+      message: existingUser.length > 0 ? '小石榴号已存在' : '小石榴号可用'
+    });
+  } catch (error) {
+    console.error('检查用户ID失败:', error);
+    res.status(500).json({ code: 500, message: '服务器内部错误' });
+  }
+});
 
 // 用户注册
 router.post('/register', async (req, res) => {
   try {
-    const { user_id, nickname, password } = req.body;
+    const { user_id, nickname, password, captchaId, captchaText } = req.body;
 
-    if (!user_id || !nickname || !password) {
+    if (!user_id || !nickname || !password || !captchaId || !captchaText) {
       return res.status(400).json({ code: 400, message: '缺少必要参数' });
     }
+    // 检查用户ID是否已存在
+    const [existingUser] = await pool.execute(
+      'SELECT id FROM users WHERE user_id = ?',
+      [user_id.toString()]
+    );
+    if (existingUser.length > 0) {
+      return res.status(400).json({ code: 400, message: '用户ID已存在' });
+    }
+
+    // 验证验证码
+    const storedCaptcha = captchaStore.get(captchaId);
+    if (!storedCaptcha) {
+      return res.status(400).json({ code: 400, message: '验证码已过期或不存在' });
+    }
+
+    if (Date.now() > storedCaptcha.expires) {
+      captchaStore.delete(captchaId);
+      return res.status(400).json({ code: 400, message: '验证码已过期' });
+    }
+
+    if (captchaText.toLowerCase() !== storedCaptcha.text.toLowerCase()) {
+      return res.status(400).json({ code: 400, message: '验证码错误' });
+    }
+
+    // 验证码验证成功，删除已使用的验证码
+    captchaStore.delete(captchaId);
 
     if (user_id.length < 3 || user_id.length > 15) {
       return res.status(400).json({ code: 400, message: '小石榴号长度必须在3-15位之间' });
@@ -30,18 +144,10 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ code: 400, message: '密码长度必须在6-20位之间' });
     }
 
-    // 检查用户ID是否已存在
-    const [existingUser] = await pool.execute(
-      'SELECT id FROM users WHERE user_id = ?',
-      [user_id.toString()]
-    );
 
-    if (existingUser.length > 0) {
-      return res.status(400).json({ code: 400, message: '用户ID已存在' });
-    }
+
 
     // 获取用户IP属地
-
     const userIP = getRealIP(req);
     let ipLocation;
     try {
@@ -127,7 +233,7 @@ router.post('/login', async (req, res) => {
       'SELECT 1 FROM users WHERE id = ? AND password = SHA2(?, 256)',
       [user.id.toString(), password]
     );
-    
+
     if (passwordCheck.length === 0) {
       return res.status(400).json({ code: 400, message: '密码错误' });
     }
@@ -279,7 +385,7 @@ router.get('/me', authenticateToken, async (req, res) => {
     const userId = req.user.id;
 
     const [userRows] = await pool.execute(
-      'SELECT id, user_id, nickname, avatar, bio, location, follow_count, fans_count, like_count, is_active, created_at, gender, zodiac_sign, mbti, education, major, interests FROM users WHERE id = ?',
+      'SELECT id, user_id, nickname, avatar, bio, location,isVerified, follow_count, fans_count, like_count, is_active, created_at, gender, zodiac_sign, mbti, education, major, interests FROM users WHERE id = ?',
       [userId.toString()]
     );
 
@@ -337,7 +443,7 @@ router.post('/admin/login', async (req, res) => {
       'SELECT 1 FROM admin WHERE id = ? AND password = SHA2(?, 256)',
       [admin.id.toString(), password]
     );
-    
+
     if (passwordCheck.length === 0) {
       return res.status(400).json({ code: 400, message: '密码错误' });
     }

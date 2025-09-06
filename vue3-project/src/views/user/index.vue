@@ -317,9 +317,11 @@ function handleCollect(data) {
           <button class="edit-profile-btn" @click="openEditProfileModal">
             编辑资料
           </button>
-          <button v-if="!userStore.isVerified===1" class="verify-btn" @click="startVerification">
-            开始认证{{userStore.userInfo}}
-
+          <button v-if="userStore.isVerified===1" class="verify-btn" disabled>
+            已认证
+          </button>
+          <button v-else class="verify-btn" @click="startVerification">
+            开始认证
           </button>
         </div>
       </div>
@@ -870,10 +872,21 @@ function handleCollect(data) {
   transition: all 0.2s ease;
 }
 
-.verify-btn:hover {
+.verify-btn:hover:not(:disabled) {
   background-color: var(--primary-color-hover);
   transform: translateY(-1px);
   box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+}
+
+.verify-btn:disabled {
+  background-color: var(--bg-color-tertiary);
+  color: var(--text-color-quaternary);
+  cursor: default;
+}
+
+.verify-btn:disabled:hover {
+  transform: none;
+  box-shadow: none;
 }
 
 /* 认证图标样式 - 参考B站大会员样式 */

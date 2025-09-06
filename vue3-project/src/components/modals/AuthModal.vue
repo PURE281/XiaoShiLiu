@@ -74,6 +74,11 @@
     </div>
 
     <MessageToast v-if="showToast" :message="toastMessage" :type="toastType" @close="handleToastClose" />
+
+    <!-- 验证码模态框 -->
+    <CaptchaModal :show="showCaptchaModal" :captcha-svg="captchaSvg" v-model:captcha-text="formData.captchaText"
+      :is-loading="isLoadingCaptcha" @close="closeCaptchaModal" @refresh="refreshCaptcha"
+      @confirm="handleCaptchaConfirm" />
   </div>
 </template>
 
@@ -81,6 +86,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import SvgIcon from '@/components/SvgIcon.vue'
 import MessageToast from '@/components/MessageToast.vue'
+import CaptchaModal from '@/components/modals/CaptchaModal.vue'
 import { useUserStore } from '@/stores/user.js'
 import { useScrollLock } from '@/composables/useScrollLock'
 
@@ -108,20 +114,28 @@ const formData = reactive({
   user_id: '',
   nickname: '',
   password: '',
-  confirmPassword: ''
+  confirmPassword: '',
+  captchaText: ''
 })
 
 const errors = reactive({
   user_id: '',
   nickname: '',
   password: '',
-  confirmPassword: ''
+  confirmPassword: '',
+  captchaText: ''
 })
 
 const showToast = ref(false)
 const toastMessage = ref('')
 const toastType = ref('success')
 const showErrors = ref(false)
+
+// 验证码相关状态
+const captchaId = ref('')
+const captchaSvg = ref('')
+const showCaptchaModal = ref(false)
+const isLoadingCaptcha = ref(false)
 
 const isFormValid = computed(() => {
   if (isLoginMode.value) {
@@ -132,16 +146,45 @@ const isFormValid = computed(() => {
   }
 })
 
-const validateUserId = () => {
+const validateUserId = async () => {
+  errors.user_id = ''
+
   if (!formData.user_id.trim()) {
     errors.user_id = '请输入聚包盆号'
-  } else if (!isLoginMode.value && formData.user_id.length < 3) {
-    errors.user_id = '聚包盆号至少需要3位'
-  } else if (!/^[a-zA-Z0-9_]+$/.test(formData.user_id)) {
-    errors.user_id = '聚包盆号只能包含字母、数字和下划线'
-  } else {
-    errors.user_id = ''
+    return
   }
+
+  if (formData.user_id.length < 3 || formData.user_id.length > 15) {
+    errors.user_id = '聚包盆号长度必须在3-15位之间'
+    return
+  }
+
+  if (!/^[a-zA-Z0-9_]+$/.test(formData.user_id)) {
+    errors.user_id = '聚包盆号只能包含字母、数字和下划线'
+    return
+  }
+
+  // 注册模式下检查用户ID是否已存在
+  if (!isLoginMode.value) {
+    try {
+      const response = await fetch(`/api/auth/check-user-id?user_id=${encodeURIComponent(formData.user_id)}`)
+      const result = await response.json()
+
+      if (result.code === 200) {
+        if (!result.data.isUnique) {
+          errors.user_id = '小石榴号已存在'
+          return
+        }
+      } else {
+        console.error('检查用户ID失败:', result.message)
+      }
+    } catch (error) {
+      console.error('检查用户ID失败:', error)
+      // 网络错误时不阻止用户继续，让后端最终验证
+    }
+  }
+
+  errors.user_id = ''
 }
 
 const validateNickname = () => {
@@ -179,17 +222,66 @@ const clearError = (field) => {
   showErrors.value = false
 }
 
+// 获取验证码
+const getCaptcha = async () => {
+  isLoadingCaptcha.value = true
+  try {
+    const response = await fetch('/api/auth/captcha')
+    const result = await response.json()
+    if (result.code === 200) {
+      captchaId.value = result.data.captchaId
+      captchaSvg.value = result.data.captchaSvg
+    }
+  } catch (error) {
+    console.error('获取验证码失败:', error)
+  } finally {
+    isLoadingCaptcha.value = false
+  }
+}
+
+// 刷新验证码
+const refreshCaptcha = () => {
+  formData.captchaText = ''
+  getCaptcha()
+}
+
+// 打开验证码模态框
+const openCaptchaModal = () => {
+  showCaptchaModal.value = true
+  getCaptcha()
+}
+
+// 关闭验证码模态框
+const closeCaptchaModal = () => {
+  showCaptchaModal.value = false
+  formData.captchaText = ''
+  errors.captchaText = ''
+}
+
+// 验证码验证
+const validateCaptcha = () => {
+  if (!formData.captchaText.trim()) {
+    errors.captchaText = '请输入验证码'
+  } else {
+    errors.captchaText = ''
+  }
+}
+
 const resetForm = () => {
   formData.user_id = ''
   formData.nickname = ''
   formData.password = ''
   formData.confirmPassword = ''
+  formData.captchaText = ''
   errors.user_id = ''
   errors.nickname = ''
   errors.password = ''
   errors.confirmPassword = ''
+  errors.captchaText = ''
   submitError.value = ''
   showErrors.value = false
+  captchaId.value = ''
+  captchaSvg.value = ''
 }
 
 const toggleMode = () => {
@@ -203,6 +295,21 @@ const toggleMode = () => {
   submitError.value = ''
   unifiedMessage.value = ''
   showErrors.value = false
+  captchaId.value = ''
+  captchaSvg.value = ''
+  showCaptchaModal.value = false
+}
+
+// 处理验证码确认
+const handleCaptchaConfirm = async () => {
+  // 验证验证码
+  validateCaptcha()
+  if (errors.captchaText) {
+    return
+  }
+
+  // 验证码验证通过，执行注册
+  await performSubmit()
 }
 
 const handleSubmit = async () => {
@@ -227,8 +334,12 @@ const handleSubmit = async () => {
       unifiedMessage.value = '请输入密码'
       return
     }
+
+    // 登录模式直接提交
+    await performSubmit()
   } else {
-    validateUserId()
+    // 注册模式：先验证表单，通过后打开验证码模态框
+    await validateUserId()
     validatePassword()
     validateNickname()
     validateConfirmPassword()
@@ -236,7 +347,14 @@ const handleSubmit = async () => {
     if (!isFormValid.value) {
       return
     }
+
+    // 表单验证通过，打开验证码模态框
+    openCaptchaModal()
   }
+}
+
+// 执行实际的提交操作
+const performSubmit = async () => {
 
   isSubmitting.value = true
 
@@ -252,6 +370,8 @@ const handleSubmit = async () => {
         user_id: formData.user_id,
         nickname: formData.nickname,
         password: formData.password,
+        captchaId: captchaId.value,
+        captchaText: formData.captchaText,
         avatar: new URL('@/assets/imgs/avatar.png', import.meta.url).href,
         bio: '用户没有任何简介',
         location: '未知'
@@ -263,6 +383,9 @@ const handleSubmit = async () => {
         isLoginMode.value ? '登录成功！' : '注册成功！',
         'success'
       )
+      if (!isLoginMode.value) {
+        closeCaptchaModal()
+      }
       setTimeout(() => {
         emit('success')
         closeModal()
@@ -272,7 +395,17 @@ const handleSubmit = async () => {
         }
       }, 1000)
     } else {
-      unifiedMessage.value = result.message
+      // 如果是验证码相关错误，刷新验证码
+      if (!isLoginMode.value && showCaptchaModal.value &&
+        (result.message.includes('验证码') || result.message.includes('captcha'))) {
+        refreshCaptcha()
+      } else if (result.message.includes('用户ID已存在')) {
+        // 用户ID重复错误，设置到对应字段
+        errors.user_id = result.message
+        closeCaptchaModal()
+      } else {
+        unifiedMessage.value = result.message
+      }
     }
   } catch (error) {
     console.error('提交失败:', error)
