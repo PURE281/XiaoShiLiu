@@ -23,7 +23,7 @@
             </div>
             <!-- 输入框字段 -->
             <div v-for="field in inputFields" :key="field.key" class="search-field">
-              <input v-model="searchParams[field.key]" :type="field.type || 'text'" :placeholder="field.placeholder" />
+              <input v-model="searchParams[field.key]" :type="field.type || 'text'" :placeholder="field.placeholder" @keyup.enter="handleSearch" />
             </div>
           </div>
           <button @click="handleSearch" class="btn btn-outline btn-sm">筛选</button>
@@ -48,7 +48,7 @@
               <div v-for="field in inputFields" :key="field.key" class="mobile-search-field">
                 <label class="field-label">{{ field.label || field.placeholder }}</label>
                 <input v-model="searchParams[field.key]" :type="field.type || 'text'"
-                  :placeholder="field.placeholder" class="mobile-input" />
+                  :placeholder="field.placeholder" class="mobile-input" @keyup.enter="handleSearch" />
               </div>
             </div>
             <div class="mobile-search-actions">

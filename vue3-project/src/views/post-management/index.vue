@@ -329,18 +329,9 @@ const handlePostUpdate = () => {
 // 处理图片加载错误
 const handleImageError = (event) => {
   const img = event.target
-  const container = img.parentElement
-
-  // 隐藏原图片
-  img.style.display = 'none'
-
-  // 如果容器中还没有占位符，则添加一个
-  if (!container.querySelector('.error-placeholder')) {
-    const placeholder = document.createElement('div')
-    placeholder.className = 'error-placeholder no-image'
-    placeholder.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z" fill="currentColor"/></svg>'
-    container.appendChild(placeholder)
-  }
+  // 直接替换为未加载图片
+  img.src = '/src/assets/imgs/未加载.png'
+  img.style.display = 'block'
 }
 
 // 组件挂载时加载数据
